@@ -5,6 +5,7 @@ For this, the `npy2bdv` package by @nvladimus needs to be installed via `python 
 * :gem: **New: Dark mode** - If the `dark_mode` option in the config file is set to `True`, the user interface appears in a dark mode. For this, the `qdarkstyle` package needs to be installed via `python -m pip install qdarkstyle`.
 * :gem: **New: Support for Sutter Lambda 10B Filter Controller** Thanks to Kevin Dean @AdvancedImagingUTSW, Sutter filter wheels are now supported.
 * :sparkles: **Improved multicolor tiling wizard** The tiling wizard now displays the FOV size and calculates the X and Y FOV offsets using a percentage setting. For this, the pixel size settings in the configuration file need to be set correctly.
+* :sparkles: **Windows can be reopened again** There are now menu options to open closed windows (Fixes #11)
 * :bug: **Bugfix:** Binning was not working properly with all cameras.
 * :bug: **Bugfix:** Removed unnecessary imports.
 
