@@ -45,7 +45,7 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
             loadUi('gui/mesoSPIM_TilingManagerWindow.ui', self)
         self.setWindowTitle('mesoSPIM-Control: Tiling Manager')
 
-        self.viewBox = self.graphicsLayoutWidget.addViewBox()
+        self.viewBox = self.graphicsLayoutWidget.addViewBox(lockAspect=1.0)
         self.viewBox.setRange(xRange=[-10000,10000], yRange=[-10000,10000])
         
         self.grid = pg.GridItem()
@@ -65,6 +65,17 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         
         self.currentFOV = CurrentFOV([0,0],[self.x_fov, self.y_fov], pen='r')
         self.viewBox.addItem(self.currentFOV)
+        
+        self.rois = []
+        xmax = 3
+        ymax = 4
+        for i in range(1,xmax+1):
+            for j in range(1,ymax+1):
+                self.rois.append(pg.CircleROI([i*1000, j*1000], [1200, 1200], pen=(i+j,xmax+ymax)))
+
+        for r in self.rois:
+            self.viewBox.addItem(r)
+
 
     def update(self):
         _position, _pixelsize = self.state.get_parameter_list(['position','pixelsize'])
