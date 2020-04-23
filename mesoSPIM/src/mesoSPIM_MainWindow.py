@@ -171,6 +171,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
     def close_app(self):
         self.camera_window.close()
         self.acquisition_manager_window.close()
+        self.acquisition_manager_window.tiling_manager_window.close()
         self.close()
 
     def display_icons(self):

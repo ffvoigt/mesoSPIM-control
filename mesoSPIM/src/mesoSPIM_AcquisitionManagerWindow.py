@@ -142,8 +142,8 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
         self.update_acquisition_time_prediction()
 
         ''' Display Tiling Manager Window '''
-        self.TilingManagerWindow = mesoSPIM_TilingManagerWindow(self)
-        self.TilingManagerWindow.show()
+        self.tiling_manager_window = mesoSPIM_TilingManagerWindow(self)
+        self.tiling_manager_window.show()
  
 
     def enable(self):
