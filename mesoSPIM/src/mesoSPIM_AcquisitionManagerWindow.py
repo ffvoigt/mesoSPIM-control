@@ -121,6 +121,7 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
         self.PreviewSelectionButton.clicked.connect(self.preview_acquisition)
 
         self.TilingWizardButton.clicked.connect(self.run_tiling_wizard)
+        self.TilingManagerButton.clicked.connect(self.open_tiling_manager)
         self.FilenameWizardButton.clicked.connect(self.generate_filenames)
         self.FocusTrackingWizardButton.clicked.connect(self.run_focus_tracking_wizard)
         self.ImageProcessingWizardButton.clicked.connect(self.run_image_processing_wizard)
@@ -464,6 +465,9 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
     def display_warning(self, string):
         warning = QtWidgets.QMessageBox.warning(None,'mesoSPIM Warning',
                 string, QtWidgets.QMessageBox.Ok) 
+
+    def open_tiling_manager(self):
+        self.tiling_manager_window.show()
 
 
 

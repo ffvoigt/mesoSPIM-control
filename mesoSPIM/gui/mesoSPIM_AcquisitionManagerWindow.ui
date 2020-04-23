@@ -315,21 +315,6 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="5">
-        <widget class="QPushButton" name="FilenameWizardButton">
-         <property name="font">
-          <font>
-           <pointsize>14</pointsize>
-          </font>
-         </property>
-         <property name="toolTip">
-          <string>Generates filenames for the entire table.</string>
-         </property>
-         <property name="text">
-          <string>Filename Wizard</string>
-         </property>
-        </widget>
-       </item>
        <item row="2" column="0" colspan="2">
         <widget class="QCheckBox" name="PreviewZCheckBox">
          <property name="font">
@@ -387,7 +372,7 @@
          </property>
         </widget>
        </item>
-       <item row="2" column="5">
+       <item row="2" column="4">
         <widget class="QPushButton" name="SetFoldersButton">
          <property name="font">
           <font>
@@ -399,6 +384,36 @@
          </property>
          <property name="text">
           <string>Set Folders</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="5">
+        <widget class="QPushButton" name="FilenameWizardButton">
+         <property name="font">
+          <font>
+           <pointsize>14</pointsize>
+          </font>
+         </property>
+         <property name="toolTip">
+          <string>Generates filenames for the entire table.</string>
+         </property>
+         <property name="text">
+          <string>Filename Wizard</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="5">
+        <widget class="QPushButton" name="TilingManagerButton">
+         <property name="font">
+          <font>
+           <pointsize>14</pointsize>
+          </font>
+         </property>
+         <property name="toolTip">
+          <string>Opens an overview of the tiling pattern.</string>
+         </property>
+         <property name="text">
+          <string>Tiling Manager</string>
          </property>
         </widget>
        </item>

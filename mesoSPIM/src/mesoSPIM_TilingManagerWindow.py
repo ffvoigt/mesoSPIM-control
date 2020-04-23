@@ -44,7 +44,13 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
             loadUi('gui/mesoSPIM_TilingManagerWindow.ui', self)
         self.setWindowTitle('mesoSPIM-Control: Tiling Manager')
 
+        self.viewBox = self.graphicsLayoutWidget.addViewBox()
+        
+        self.myROI = pg.CrosshairROI([110, 50], [40, 40], pen=(4,9))
+        self.viewBox.addItem(self.myROI)
+
         self.grid = pg.GridItem()
+        self.viewBox.addItem(self.grid)
 
         # self.graphicsLayoutWidget.addItem(self.grid)
 
