@@ -15,6 +15,8 @@ from PyQt5.uic import loadUi
 ''' mesoSPIM imports '''
 from .mesoSPIM_State import mesoSPIM_StateSingleton
 
+from .mesoSPIM_TilingManagerWindow import mesoSPIM_TilingManagerWindow
+
 from .utils.models import AcquisitionModel
 
 from .utils.delegates import (ComboDelegate,
@@ -139,8 +141,9 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
         ''' Display initial time prediction '''
         self.update_acquisition_time_prediction()
 
-        '''XML writing testcode'''
-        # self.GenerateXMLButton.clicked.connect(self.generate_xml)
+        ''' Display Tiling Manager Window '''
+        self.TilingManagerWindow = mesoSPIM_TilingManagerWindow(self)
+        self.TilingManagerWindow.show()
  
 
     def enable(self):
