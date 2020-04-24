@@ -65,6 +65,12 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         
         self.currentFOV = CurrentFOV([0,0],[self.x_fov, self.y_fov], pen='r')
         self.viewBox.addItem(self.currentFOV)
+
+        self.tileROI = EllipticalTileROI([0,0],[1000,2000])
+        self.viewBox.addItem(self.tileROI)
+
+        # self.myCrossHair = CrosshairROI([0,0], [1000,1000])
+        # self.viewBox.addItem(self.myCrossHair)
         
         self.rois = []
         xmax = 3
@@ -75,7 +81,6 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
 
         for r in self.rois:
             self.viewBox.addItem(r)
-
 
     def update(self):
         _position, _pixelsize = self.state.get_parameter_list(['position','pixelsize'])
@@ -97,7 +102,7 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         if delta_pixelsize != 0:
             scaling_factor = _pixelsize/self.pixelsize
             self.update_fov(_pixelsize)
-            self.currentFOV.scale([scaling_factor,scaling_factor], center=[0.5,0.5])
+            self.currentFOV.scale([scaling_factor,scaling_factor])
 
     def update_fov(self, pixelsize):
         ''' Because of the camera rotation by 90 degrees, x and y are interchanged.'''
@@ -105,29 +110,119 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         self.x_fov = self.y_pixels * self.pixelsize
         self.y_fov = self.x_pixels * self.pixelsize
 
-class CurrentFOV(pg.ROI):
+class EllipticalTileROI(pg.ROI):
     """
-    Rectangular ROI subclass with a single scale handle at the top-right corner.
-    
+    Elliptical ROI subclass 
+
     ============== =============================================================
     **Arguments**
-    pos            (length-2 sequence) The position of the ROI origin.
-                   See ROI().
-    size           (length-2 sequence) The size of the ROI. See ROI().
-    centered       (bool) If True, scale handles affect the ROI relative to its
-                   center, rather than its origin.
-    sideScalers    (bool) If True, extra scale handles are added at the top and 
-                   right edges.
+    pos            (length-2 sequence) The position of the ROI's center.
+    size           (length-2 sequence) The size of the ROI's bounding rectangle.
     \**args        All extra keyword arguments are passed to ROI()
     ============== =============================================================
     
     """
     def __init__(self, pos, size, **args):
-        x_pos = pos[0] - int(size[0]/2)
-        y_pos = pos[1] - int(size[1]/2)
-        pg.ROI.__init__(self, [x_pos, y_pos], size, **args)
-        center = [0.5, 0.5]
+        self.path = None
+        pg.ROI.__init__(self, pos, size, **args)
+        self.sigRegionChanged.connect(self._clearPath)
         self.translatable = False
+                   
+    def _clearPath(self):
+        self.path = None
+        
+    def paint(self, p, opt, widget):
+        r = self.boundingRect()
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        p.setPen(self.currentPen)
+        
+        p.scale(r.width(), r.height())## workaround for GL bug
+        r = QtCore.QRectF(r.x()/r.width(), r.y()/r.height(), 1,1)
+        
+        p.drawEllipse(r)
+        
+    def shape(self):
+        if self.path is None:
+            path = QtGui.QPainterPath()
+            
+            # Note: Qt has a bug where very small ellipses (radius <0.001) do
+            # not correctly intersect with mouse position (upper-left and 
+            # lower-right quadrants are not clickable).
+            #path.addEllipse(self.boundingRect())
+            
+            # Workaround: manually draw the path.
+            br = self.boundingRect()
+            center = br.center()
+            r1 = br.width() / 2.
+            r2 = br.height() / 2.
+            theta = np.linspace(0, 2*np.pi, 24)
+            x = center.x() + r1 * np.cos(theta)
+            y = center.y() + r2 * np.sin(theta)
+            path.moveTo(x[0], y[0])
+            for i in range(1, len(x)):
+                path.lineTo(x[i], y[i])
+            self.path = path
+        
+        return self.path
+
+class CurrentFOV(pg.ROI):
+    """A crosshair ROI whose position is at the center of the crosshairs. By default, it is scalable, rotatable and translatable."""
+    
+    def __init__(self, pos=None, size=None, **kargs):
+        if size == None:
+            size=[1,1]
+        if pos == None:
+            pos = [0,0] 
+        size = [int(i/2) for i in size] # Divide size by 2 to convert FOV -> radius
+        self._shape = None
+        pg.ROI.__init__(self, pos, size, **kargs)
+        
+        self.sigRegionChanged.connect(self.invalidate)
+        self.aspectLocked = True
+        self.translatable = False
+
+    def invalidate(self):
+        self._shape = None
+        self.prepareGeometryChange()
+        
+    def boundingRect(self):
+        return self.shape().boundingRect()
+
+    def shape(self):
+        if self._shape is None:
+            x_halfwidth = self.getState()['size'][0]
+            y_halfwidth = self.getState()['size'][1]
+            p = QtGui.QPainterPath()
+            p.moveTo(pg.Point(0, -y_halfwidth))
+            p.lineTo(pg.Point(0, y_halfwidth))
+            p.moveTo(pg.Point(-x_halfwidth, 0))
+            p.lineTo(pg.Point(x_halfwidth, 0))
+            p.moveTo(pg.Point(-x_halfwidth, y_halfwidth))
+            p.lineTo(pg.Point(x_halfwidth, y_halfwidth))
+            p.lineTo(pg.Point(x_halfwidth, -y_halfwidth))
+            p.lineTo(pg.Point(-x_halfwidth, -y_halfwidth))
+            p.lineTo(pg.Point(-x_halfwidth, y_halfwidth))
+            p = self.mapToDevice(p)
+            stroker = QtGui.QPainterPathStroker()
+            stroker.setWidth(10)
+            outline = stroker.createStroke(p)
+            self._shape = self.mapFromDevice(outline)
+        
+        return self._shape
+    
+    def paint(self, p, *args):
+        ''' Defines in which region the shape is painted '''
+        x_halfwidth = self.getState()['size'][0]
+        y_halfwidth = self.getState()['size'][1]
+        p.setRenderHint(QtGui.QPainter.Antialiasing)
+        p.setPen(self.currentPen)
+        
+        p.drawLine(pg.Point(0, -y_halfwidth), pg.Point(0, y_halfwidth))
+        p.drawLine(pg.Point(-x_halfwidth, 0), pg.Point(x_halfwidth, 0))
+        p.drawLine(pg.Point(-x_halfwidth, -y_halfwidth), pg.Point(-x_halfwidth, y_halfwidth))
+        p.drawLine(pg.Point(-x_halfwidth, y_halfwidth), pg.Point(x_halfwidth, y_halfwidth))
+        p.drawLine(pg.Point(x_halfwidth, y_halfwidth), pg.Point(x_halfwidth, -y_halfwidth))
+        p.drawLine(pg.Point(x_halfwidth, -y_halfwidth), pg.Point(-x_halfwidth, -y_halfwidth))
 
     def contextMenuEnabled(self):
         return True
@@ -152,49 +247,3 @@ class CurrentFOV(pg.ROI):
     
     def printClicked(self):
         print('I have been clicked')
-
-class CrosshairROI(pg.ROI):
-    """A crosshair ROI whose position is at the center of the crosshairs. By default, it is scalable, rotatable and translatable."""
-    
-    def __init__(self, pos=None, size=None, **kargs):
-        if size == None:
-            size=[1,1]
-        if pos == None:
-            pos = [0,0]
-        self._shape = None
-        pg.ROI.__init__(self, pos, size, **kargs)
-        
-        self.sigRegionChanged.connect(self.invalidate)
-        self.addScaleRotateHandle(pg.Point(1, 0), pg.Point(0, 0))
-        self.aspectLocked = True
-
-    def invalidate(self):
-        self._shape = None
-        self.prepareGeometryChange()
-        
-    def boundingRect(self):
-        return self.shape().boundingRect()
-    
-    def shape(self):
-        if self._shape is None:
-            radius = self.getState()['size'][1]
-            p = QtGui.QPainterPath()
-            p.moveTo(pg.Point(0, -radius))
-            p.lineTo(pg.Point(0, radius))
-            p.moveTo(pg.Point(-radius, 0))
-            p.lineTo(pg.Point(radius, 0))
-            p = self.mapToDevice(p)
-            stroker = QtGui.QPainterPathStroker()
-            stroker.setWidth(10)
-            outline = stroker.createStroke(p)
-            self._shape = self.mapFromDevice(outline)
-            
-        return self._shape
-    
-    def paint(self, p, *args):
-        radius = self.getState()['size'][1]
-        p.setRenderHint(QtGui.QPainter.Antialiasing)
-        p.setPen(self.currentPen)
-        
-        p.drawLine(pg.Point(0, -radius), pg.Point(0, radius))
-        p.drawLine(pg.Point(-radius, 0), pg.Point(radius, 0))
