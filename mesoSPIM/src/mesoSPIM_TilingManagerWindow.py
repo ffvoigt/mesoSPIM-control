@@ -1,7 +1,7 @@
 '''
 mesoSPIM TilingManagerWindow 
 
-Displays an overview of 
+Displays an overview of tile positions.
 '''
 
 import sys
@@ -26,6 +26,8 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
 
         self.state = mesoSPIM_StateSingleton()
         self.state.sig_updated.connect(self.update)
+
+        self.model = None
 
         ''' Change the PyQtGraph-Options in White Mode'''
         pg.setConfigOptions(imageAxisOrder='row-major')
@@ -81,6 +83,9 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
 
         for r in self.rois:
             self.viewBox.addItem(r)
+
+    def set_model(self, model):
+        self.model = model
 
     def update(self):
         _position, _pixelsize = self.state.get_parameter_list(['position','pixelsize'])
