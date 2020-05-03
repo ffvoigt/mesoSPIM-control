@@ -44,8 +44,16 @@ class mesoSPIM_PlottingWindow(QtWidgets.QWidget):
         self.setWindowTitle('mesoSPIM-Control: Plotting Window')
         self.plot = self.graphicsLayoutWidget.addPlot()
         self.curve = self.plot.plot()
+        self.plot.showGrid(True,True)
         self.data = []
         self.count = 0
+
+        ''' Slightly hacky way to get an item display in the plot menu'''
+        printAct = QtGui.QAction("Reset plot", self.plot.ctrlMenu)
+        printAct.triggered.connect(self.reset_plot)
+        self.plot.ctrlMenu.addAction(printAct)
+        self.plot.ctrlMenu.printAct = printAct
+        
     
     @QtCore.pyqtSlot()
     def update_plot(self):
@@ -58,5 +66,6 @@ class mesoSPIM_PlottingWindow(QtWidgets.QWidget):
     def reset_plot(self):
         self.data = []
         self.count = 0
-        self.curve.setData(np.hstack(self.data))
+        self.curve.clear()
+    
     

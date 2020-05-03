@@ -2178,9 +2178,9 @@ Position</string>
              <widget class="QPushButton" name="OpenDCTSPlotButton">
               <property name="geometry">
                <rect>
-                <x>10</x>
+                <x>20</x>
                 <y>520</y>
-                <width>211</width>
+                <width>471</width>
                 <height>31</height>
                </rect>
               </property>
