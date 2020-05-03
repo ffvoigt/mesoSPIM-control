@@ -20,6 +20,7 @@ from PyQt5.uic import loadUi
 from .mesoSPIM_CameraWindow import mesoSPIM_CameraWindow
 from .mesoSPIM_AcquisitionManagerWindow import mesoSPIM_AcquisitionManagerWindow
 from .mesoSPIM_ScriptWindow import mesoSPIM_ScriptWindow
+from .mesoSPIM_PlottingWindow import mesoSPIM_PlottingWindow
 
 from .mesoSPIM_State import mesoSPIM_StateSingleton
 from .mesoSPIM_Core import mesoSPIM_Core
@@ -91,6 +92,9 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.acquisition_manager_window.sig_warning.connect(self.display_warning)
         self.acquisition_manager_window.sig_move_absolute.connect(self.sig_move_absolute.emit)
 
+        self.plotting_window = mesoSPIM_PlottingWindow(self)
+        # self.plotting_window.show()
+
         '''
         Setting up the threads
         '''
@@ -129,6 +133,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         risky) It will break immediately when there is an API change.'''
         try:
             self.core.camera_worker.sig_camera_frame.connect(self.camera_window.set_image)
+            self.core.camera_worker.sig_camera_frame.connect(self.plotting_window.update_plot)
             # print('Camera connected successfully to the display window!')
         except:
             logger.warning(f'Main Window: Camera not connected to display!', exc_info=True)
@@ -174,6 +179,10 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
     def close_app(self):
         self.camera_window.close()
         self.acquisition_manager_window.close()
+        try:
+            self.plotting_window.close()
+        except:
+            pass
         self.close()
 
     def display_icons(self):
@@ -356,6 +365,8 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.SnapFolderIndicator.setText(self.state['snap_folder'])
         
         self.ETLconfigIndicator.setText(self.state['ETL_cfg_file'])
+
+        self.OpenDCTSPlotButton.clicked.connect(lambda: self.plotting_window.show())
 
         self.widget_to_state_parameter_assignment=(
             (self.FilterComboBox, 'filter',1),
