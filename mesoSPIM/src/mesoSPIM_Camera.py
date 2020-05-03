@@ -21,10 +21,12 @@ except:
 from .mesoSPIM_State import mesoSPIM_StateSingleton
 from .mesoSPIM_ImageWriter import mesoSPIM_ImageWriter
 from .utils.acquisitions import AcquisitionList, Acquisition
+from .utils.dcts_utils import dcts
 
 class mesoSPIM_Camera(QtCore.QObject):
     '''Top-level class for all cameras'''
     sig_camera_frame = QtCore.pyqtSignal(np.ndarray)
+    sig_autofocus_value = QtCore.pyqtSignal(dict)
     sig_finished = QtCore.pyqtSignal()
     sig_update_gui_from_state = QtCore.pyqtSignal(bool)
     sig_status_message = QtCore.pyqtSignal(str)
@@ -238,9 +240,15 @@ class mesoSPIM_Camera(QtCore.QObject):
         image = np.rot90(image)
 
         ''' Do autofocus computation here '''
-        print('Autofocus image taken')    
+        print('Autofocus image taken')
 
+        dcts_result = dcts(image)
+        return_dict = {'dcts_result': dcts_result}
+
+        self.sig_autofocus_value.emit(return_dict)
+        ''' Autofocus computation done '''
         self.sig_camera_frame.emit(image[0:self.x_pixels:self.camera_display_snap_subsampling,0:self.y_pixels:self.camera_display_snap_subsampling])
+
 
     @QtCore.pyqtSlot()
     def prepare_live(self):

@@ -56,12 +56,28 @@ class mesoSPIM_PlottingWindow(QtWidgets.QWidget):
         
     
     @QtCore.pyqtSlot()
-    def update_plot(self):
+    def generate_random_plot(self):
         self.data.append(np.random.normal(size=1) + np.sin(self.count * 0.1) * 5)
         if len(self.data) > 100:
             self.data.pop(0)
         self.curve.setData(np.hstack(self.data))
         self.count += 1
+
+    #@QtCore.pyqtSlot(dict)
+    def update_plot(self, autofocus_dict):
+        #print(autofocus_dict)
+        #print(type(autofocus_dict))
+        #print(autofocus_dict['dcts_result'])
+        #print(type(autofocus_dict['dcts_result']))
+        #print(self.data)
+
+        self.data.append(autofocus_dict['dcts_result'])
+
+        if len(self.data) > 100:
+            self.data.pop(0)
+
+        self.curve.setData(np.hstack(self.data))
+        #self.count += 1
 
     def reset_plot(self):
         self.data = []

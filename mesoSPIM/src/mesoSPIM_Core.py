@@ -72,6 +72,8 @@ class mesoSPIM_Core(QtCore.QObject):
     sig_end_live = QtCore.pyqtSignal()
     sig_get_autofocus_image = QtCore.pyqtSignal()
 
+    sig_autofocus_value = QtCore.pyqtSignal(dict)
+
     ''' Movement-related signals: '''
     sig_move_relative = QtCore.pyqtSignal(dict)
     sig_move_relative_and_wait_until_done = QtCore.pyqtSignal(dict)
@@ -129,6 +131,7 @@ class mesoSPIM_Core(QtCore.QObject):
         self.camera_worker.moveToThread(self.camera_thread)
         self.camera_worker.sig_update_gui_from_state.connect(self.sig_update_gui_from_state.emit)
         self.camera_worker.sig_status_message.connect(self.send_status_message_to_gui)
+        self.camera_worker.sig_autofocus_value.connect(self.process_autofocus_value)
         #logger.info('Camera worker thread affinity after moveToThread? Answer:'+str(id(self.camera_worker.thread())))
         ''' Set the serial thread up '''
         self.serial_thread = QtCore.QThread()
@@ -1078,3 +1081,7 @@ class mesoSPIM_Core(QtCore.QObject):
         for i in input_list:
             mystring = mystring + ' \n ' + i    
         return mystring
+
+    @QtCore.pyqtSlot(dict)
+    def process_autofocus_value(self, autofocus_dict):
+        self.sig_autofocus_value.emit(autofocus_dict)
