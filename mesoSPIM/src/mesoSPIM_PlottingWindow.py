@@ -45,6 +45,8 @@ class mesoSPIM_PlottingWindow(QtWidgets.QWidget):
         self.plot = self.graphicsLayoutWidget.addPlot()
         self.curve = self.plot.plot()
         self.plot.showGrid(True,True)
+        self.plot.setLabel('left', "Modified Shannon Entropy of the DCT", units='a.u.')
+        self.plot.setLabel('bottom', "#Images")
         self.data = []
         self.count = 0
 

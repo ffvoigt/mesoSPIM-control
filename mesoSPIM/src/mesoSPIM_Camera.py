@@ -240,10 +240,10 @@ class mesoSPIM_Camera(QtCore.QObject):
         image = np.rot90(image)
 
         ''' Do autofocus computation here '''
-        print('Autofocus image taken')
-
         dcts_result = dcts(image)
         return_dict = {'dcts_result': dcts_result}
+
+        logger.info(f'Camera: Autofocus image taken, DCTS readout: {dcts_result}')
 
         self.sig_autofocus_value.emit(return_dict)
         ''' Autofocus computation done '''
