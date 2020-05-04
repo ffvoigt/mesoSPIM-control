@@ -42,6 +42,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
     sig_enable_gui = QtCore.pyqtSignal(bool)
 
     sig_state_request = QtCore.pyqtSignal(dict)
+    sig_autofocus_request = QtCore.pyqtSignal(dict)
     
     sig_execute_script = QtCore.pyqtSignal(str)
 
@@ -367,6 +368,8 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         
         self.ETLconfigIndicator.setText(self.state['ETL_cfg_file'])
 
+        self.OptimizeETLOffsetButton.clicked.connect(self.autoset_etl_offset)
+        self.OptimizeETLAmplitudeButton.clicked.connect(self.autoset_etl_amplitude)
         self.OpenDCTSPlotButton.clicked.connect(lambda: self.autofocus_plot_window.show())
 
         self.widget_to_state_parameter_assignment=(
@@ -692,4 +695,33 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(dict)
     def process_autofocus_value(self, autofocus_dict):
         self.autofocus_plot_window.update_plot(autofocus_dict)
-        
+        last_dcts_result = round(autofocus_dict['dcts_result'],2)
+        self.LastDCTSValueLineEdit.setText(str(last_dcts_result))
+
+    def autoset_etl_offset(self):
+
+
+
+        message_dict = {'autofocus' : 'ETLoffset',
+                        'shutterconfig' : self.state['shutterconfig'],
+                        'delta' : self.AutoETLOffsetSpinbox.value(),
+                        'iterations' : self.AutoETLIterationSpinbox.value()
+                        }
+
+        self.sig_autofocus_request.emit(message_dict)
+        self.set_progressbars_to_busy()
+        self.enable_mode_control_buttons(False)
+        self.enable_stop_button(True)
+
+    def autoset_etl_amplitude(self):
+        message_dict = {'autofocus' : 'ETLamplitude',
+                        'shutterconfig': self.state['shutterconfig'],
+                        'delta' : self.AutoETLAmplitudeSpinbox.value(),
+                        'iterations' : self.AutoETLIterationSpinbox.value()
+                        }
+
+        self.sig_autofocus_request.emit(message_dict)
+        self.set_progressbars_to_busy()
+        self.enable_mode_control_buttons(False)
+        self.enable_stop_button(True)
+       

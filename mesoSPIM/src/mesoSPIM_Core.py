@@ -104,6 +104,7 @@ class mesoSPIM_Core(QtCore.QObject):
 
         ''' The signal-slot switchboard '''
         self.parent.sig_state_request.connect(self.state_request_handler)
+        self.parent.sig_autofocus_request.connect(self.autofocus_request_handler)
 
         self.parent.sig_execute_script.connect(self.execute_script)
 
@@ -205,6 +206,7 @@ class mesoSPIM_Core(QtCore.QObject):
 
         self.start_time = 0
         self.stopflag = False
+        self.dcts_results = None
         logger.info('Thread ID at Startup: '+str(int(QtCore.QThread.currentThreadId())))
         self.metadata_file = None
         # self.acquisition_list_rotation_position = {}
@@ -281,6 +283,14 @@ class mesoSPIM_Core(QtCore.QObject):
                        'camera_binning',
                        ):
                 self.sig_state_request.emit({key : value})
+
+    @QtCore.pyqtSlot(dict)
+    def autofocus_request_handler(self, autofocus_dict):
+        if autofocus_dict['autofocus'] == 'ETLoffset':
+            self.autoset_etl_offset(autofocus_dict)
+        
+        elif autofocus_dict['autofocus'] == 'ETLamplitude':
+            self.autoset_etl_amplitude(autofocus_dict)
 
     def set_state(self, state):
         if state == 'live':
@@ -1081,7 +1091,121 @@ class mesoSPIM_Core(QtCore.QObject):
         for i in input_list:
             mystring = mystring + ' \n ' + i    
         return mystring
+        
+    def autoset_etl_offset(self, autofocus_dict):
+        iterations = autofocus_dict['iterations']
+
+        self.dcts_results = np.zeros((iterations, 2))
+
+        ''' Currently, shutterconfig both sides is not handled here '''
+        if autofocus_dict['shutterconfig'] == 'Left':
+            current_offset = self.state['etl_l_offset']
+            min_offset = current_offset - autofocus_dict['delta']
+            max_offset = current_offset + autofocus_dict['delta']
+        else:
+            current_offset = self.state['etl_r_offset']
+            min_offset = current_offset - autofocus_dict['delta']
+            max_offset = current_offset + autofocus_dict['delta']
+
+        offsets = np.linspace(min_offset, max_offset, iterations)
+
+        self.sig_update_gui_from_state.emit(True)
+        self.sig_status_message.emit('Autofocus: Setting ETL Offset')
+        self.sig_prepare_live.emit()
+        self.open_shutters()
+
+        for i in range(iterations):
+            if autofocus_dict['shutterconfig'] == 'Left':
+                self.sig_state_request.emit({'etl_l_offset': offsets[i]})
+            else:
+                self.sig_state_request.emit({'etl_r_offset': offsets[i]})
+
+            self.dcts_results[i,0]=offsets[i]
+            
+            self.snap_image()
+            self.sig_get_autofocus_image.emit()
+            QtWidgets.QApplication.processEvents()
+        
+        self.close_shutters()
+        self.sig_end_live.emit()
+        self.sig_finished.emit()
+
+        ''' Set ETL ampltitude to highest DCTS value '''
+        best_index = np.argmax(self.dcts_results[:,1])
+        best_offset = self.dcts_results[best_index, 0]
+        print('Best offset: ', best_offset)
+        if autofocus_dict['shutterconfig'] == 'Left':
+            self.sig_state_request.emit({'etl_l_offset': best_offset})
+        else:
+            self.sig_state_request.emit({'etl_r_offset': best_offset})
+
+        QtWidgets.QApplication.processEvents()
+        self.dcts_results = None
+        self.sig_status_message.emit('Autofocus: Done')
+        time.sleep(0.05)
+        self.sig_update_gui_from_state.emit(False)
+
+    def autoset_etl_amplitude(self, autofocus_dict):
+        iterations = autofocus_dict['iterations']
+
+        self.dcts_results = np.zeros((iterations, 2))
+
+        ''' Currently, shutterconfig both sides is not handled here '''
+        if autofocus_dict['shutterconfig'] == 'Left':
+            current_amp = self.state['etl_l_amplitude']
+            min_amp = current_amp - autofocus_dict['delta']
+            max_amp = current_amp + autofocus_dict['delta']
+        else:
+            current_amp = self.state['etl_r_amplitude']
+            min_amp = current_amp - autofocus_dict['delta']
+            max_amp = current_amp + autofocus_dict['delta']
+
+        amplitudes = np.linspace(min_amp, max_amp, iterations)
+
+        self.sig_update_gui_from_state.emit(True)
+        self.sig_status_message.emit('Autofocus: Setting ETL Amplitude')
+        self.sig_prepare_live.emit()
+        self.open_shutters()
+
+        for i in range(iterations):
+            if autofocus_dict['shutterconfig'] == 'Left':
+                self.sig_state_request.emit({'etl_l_amplitude': amplitudes[i]})
+            else:
+                self.sig_state_request.emit({'etl_r_amplitude': amplitudes[i]})
+
+            self.dcts_results[i,0]=amplitudes[i]
+            
+            self.snap_image()
+            self.sig_get_autofocus_image.emit()
+            QtWidgets.QApplication.processEvents()
+        
+        self.close_shutters()
+        self.sig_end_live.emit()
+        self.sig_finished.emit()
+
+        ''' Set ETL ampltitude to highest DCTS value '''
+        best_index = np.argmax(self.dcts_results[:,1])
+        best_amplitude = self.dcts_results[best_index, 0]
+
+        if autofocus_dict['shutterconfig'] == 'Left':
+            self.sig_state_request.emit({'etl_l_amplitude': best_amplitude})
+        else:
+            self.sig_state_request.emit({'etl_r_amplitude': best_amplitude})
+
+        QtWidgets.QApplication.processEvents()
+        self.dcts_results = None
+        self.sig_status_message.emit('Autofocus: Done')
+        time.sleep(0.05)
+        self.sig_update_gui_from_state.emit(False)
 
     @QtCore.pyqtSlot(dict)
     def process_autofocus_value(self, autofocus_dict):
+        if self.dcts_results is not None:
+            ''' Get last empty value and it fill it in'''
+            try:
+                index = np.argmin(self.dcts_results[:,0])-1
+            except:
+                index = len(self.dcts_results)-1
+            self.dcts_results[index,1]=autofocus_dict['dcts_result']
+
         self.sig_autofocus_value.emit(autofocus_dict)

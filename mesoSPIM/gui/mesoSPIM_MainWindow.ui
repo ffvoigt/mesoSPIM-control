@@ -1920,7 +1920,7 @@ Position</string>
                <string>Optimize Amplitude</string>
               </property>
              </widget>
-             <widget class="QDoubleSpinBox" name="LeftETLOffsetSpinBox_2">
+             <widget class="QDoubleSpinBox" name="AutoETLOffsetSpinbox">
               <property name="enabled">
                <bool>true</bool>
               </property>
@@ -1944,16 +1944,16 @@ Position</string>
                <number>3</number>
               </property>
               <property name="maximum">
-               <double>5.000000000000000</double>
+               <double>2.000000000000000</double>
               </property>
               <property name="singleStep">
                <double>0.002000000000000</double>
               </property>
               <property name="value">
-               <double>2.520000000000000</double>
+               <double>0.200000000000000</double>
               </property>
              </widget>
-             <widget class="QDoubleSpinBox" name="LeftETLOffsetSpinBox_5">
+             <widget class="QDoubleSpinBox" name="AutoETLAmplitudeSpinbox">
               <property name="enabled">
                <bool>true</bool>
               </property>
@@ -1977,13 +1977,13 @@ Position</string>
                <number>3</number>
               </property>
               <property name="maximum">
-               <double>5.000000000000000</double>
+               <double>1.000000000000000</double>
               </property>
               <property name="singleStep">
                <double>0.002000000000000</double>
               </property>
               <property name="value">
-               <double>2.520000000000000</double>
+               <double>0.200000000000000</double>
               </property>
              </widget>
              <widget class="QLabel" name="label_10">
@@ -2022,77 +2022,11 @@ Position</string>
                <string>Optimization parameters</string>
               </property>
              </widget>
-             <widget class="QDoubleSpinBox" name="LeftETLOffsetSpinBox_3">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="geometry">
-               <rect>
-                <x>240</x>
-                <y>230</y>
-                <width>101</width>
-                <height>31</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>14</pointsize>
-               </font>
-              </property>
-              <property name="suffix">
-               <string> V</string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>5.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.002000000000000</double>
-              </property>
-              <property name="value">
-               <double>2.520000000000000</double>
-              </property>
-             </widget>
-             <widget class="QDoubleSpinBox" name="LeftETLOffsetSpinBox_4">
-              <property name="enabled">
-               <bool>true</bool>
-              </property>
-              <property name="geometry">
-               <rect>
-                <x>240</x>
-                <y>280</y>
-                <width>101</width>
-                <height>31</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>14</pointsize>
-               </font>
-              </property>
-              <property name="suffix">
-               <string> V</string>
-              </property>
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>5.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.002000000000000</double>
-              </property>
-              <property name="value">
-               <double>2.520000000000000</double>
-              </property>
-             </widget>
              <widget class="QLabel" name="label_25">
               <property name="geometry">
                <rect>
                 <x>20</x>
-                <y>340</y>
+                <y>280</y>
                 <width>211</width>
                 <height>31</height>
                </rect>
@@ -2124,11 +2058,11 @@ Position</string>
                <string>Snap DCTS Image</string>
               </property>
              </widget>
-             <widget class="QLineEdit" name="lineEdit">
+             <widget class="QLineEdit" name="LastDCTSValueLineEdit">
               <property name="geometry">
                <rect>
                 <x>240</x>
-                <y>340</y>
+                <y>280</y>
                 <width>251</width>
                 <height>31</height>
                </rect>
@@ -2137,6 +2071,9 @@ Position</string>
                <font>
                 <pointsize>14</pointsize>
                </font>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
               </property>
              </widget>
              <widget class="QLabel" name="label_26">
@@ -2154,25 +2091,7 @@ Position</string>
                </font>
               </property>
               <property name="text">
-               <string>Max Iterations:</string>
-              </property>
-             </widget>
-             <widget class="QLabel" name="label_27">
-              <property name="geometry">
-               <rect>
-                <x>20</x>
-                <y>280</y>
-                <width>211</width>
-                <height>31</height>
-               </rect>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>14</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Max Iterations:</string>
+               <string>Iterations:</string>
               </property>
              </widget>
              <widget class="QPushButton" name="OpenDCTSPlotButton">
@@ -2191,6 +2110,27 @@ Position</string>
               </property>
               <property name="text">
                <string>Open DCTS Plot</string>
+              </property>
+             </widget>
+             <widget class="QSpinBox" name="AutoETLIterationSpinbox">
+              <property name="geometry">
+               <rect>
+                <x>240</x>
+                <y>233</y>
+                <width>101</width>
+                <height>31</height>
+               </rect>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>14</pointsize>
+               </font>
+              </property>
+              <property name="maximum">
+               <number>40</number>
+              </property>
+              <property name="value">
+               <number>11</number>
               </property>
              </widget>
             </widget>
