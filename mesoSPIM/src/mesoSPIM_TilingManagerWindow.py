@@ -89,7 +89,8 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
             self.position = _position
             if self.RotationSelectionComboBox.currentText() == 'Current':
                 if self.displayed_rotation != self.position['theta_pos']:
-                    
+                    self.displayed_rotation = self.position['theta_pos']
+                    self.current_rotation = self.position['theta_pos']
 
             self.update_acquisition_view()
             self.update_current_fov()
@@ -167,12 +168,13 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
                 xpos = self.model.getXPosition(row)
                 ypos = self.model.getYPosition(row)
                 zoom = self.model.getZoom(row)
+                shutterconfig = self.model.getShutterconfig(row)
 
                 pixelsize = self.cfg.pixelsize[zoom]
                 x_fov = self.y_pixels * pixelsize
                 y_fov = self.x_pixels * pixelsize
 
-                self.rois.append(AcquisitionROI([xpos, ypos], [x_fov, y_fov], rowID=row, pen=self.roiPen))
+                self.rois.append(AcquisitionROI([xpos, ypos], [x_fov, y_fov], rowID=row, shutterconfig=shutterconfig, pen=self.roiPen))
 
         for r in self.rois:
             self.viewBox.addItem(r)
@@ -189,7 +191,7 @@ class AcquisitionROI(pg.ROI):
     ============== =============================================================
     
     """
-    def __init__(self, pos, size, rowID,**args):
+    def __init__(self, pos, size, rowID, shutterconfig, **args):
         self.path = None
         ''' Shift the position so that the center is the middle'''
         pos = (pos[0]-int(size[0]/2),pos[1]-int(size[1]/2))
@@ -201,7 +203,10 @@ class AcquisitionROI(pg.ROI):
         self.rowID = rowID
 
         self.roiSelectedPen = pg.mkPen({'color':"#FF0", 'width':2})
+        self.roiPen = pg.mkPen({'color':"#C0C0C0", 'width':2})
+
         self.stdPen = self.currentPen
+        self.shutterconfig = shutterconfig
                    
     def _clearPath(self):
         self.path = None
@@ -268,7 +273,36 @@ class AcquisitionROI(pg.ROI):
         p.scale(r.width(), r.height())## workaround for GL bug
         r = QtCore.QRectF(r.x()/r.width(), r.y()/r.height(), 1,1)
         
-        p.drawEllipse(r)
+        # p.drawEllipse(r)
+        #pen0 = pg.mkPen({'color':"#C0C0C0", 'width':3})
+        #pen1 = pg.mkPen({'color':"#C0C0C0", 'width':1})
+
+        if self.shutterconfig == 'Left':
+            pen = p.pen()
+            pen.setWidth(3)
+            p.setPen(pen)
+            p.drawArc(r,90*16,180*16)
+            pen = p.pen()
+            pen.setWidth(1)
+            p.setPen(pen)
+            p.drawArc(r,-90*16,180*16)
+        elif self.shutterconfig == 'Right':
+            pen = p.pen()
+            pen.setWidth(1)
+            p.setPen(pen)
+            p.drawArc(r,90*16,180*16)
+            pen = p.pen()
+            pen.setWidth(3)
+            p.setPen(pen)
+            p.drawArc(r,-90*16,180*16)
+        else:
+            pen = p.pen()
+            pen.setWidth(3)
+            p.setPen(pen)
+            p.drawArc(r,90*16,180*16)
+            p.drawArc(r,-90*16,180*16)
+        
+        
         
     def shape(self):
         if self.path is None:
