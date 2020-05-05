@@ -238,13 +238,13 @@ class AcquisitionROI(pg.ROI):
         if self.mouseHovering == hover:
             return
         self.mouseHovering = hover
-        self._updateHoverColor()
+        # self._updateHoverColor()
         
-    def _updateHoverColor(self):
-        pen = self._makePen()
-        if self.currentPen != pen:
-            self.currentPen = pen
-            self.update()
+    # def _updateHoverColor(self):
+    #     pen = self._makePen()
+    #     if self.currentPen != pen:
+    #         self.currentPen = pen
+    #         self.update()
 
     def setSelected(self, boolean):
         if boolean:
@@ -254,16 +254,43 @@ class AcquisitionROI(pg.ROI):
             self.currentPen = self.stdPen
             self.update()
         
-    def _makePen(self):
-        # Generate the pen color for this ROI based on its current state.
-        if self.mouseHovering:
-            return pg.functions.mkPen(255, 255, 0)
-        else:
-            return self.pen
+    # def _makePen(self):
+    #     # Generate the pen color for this ROI based on its current state.
+    #     if self.mouseHovering:
+    #         return pg.functions.mkPen(255, 255, 0)
+    #     else:
+    #         return self.pen
 
     def contextMenuEnabled(self):
-        # return self.removable
         return True
+    
+    def raiseContextMenu(self, ev):
+        if not self.contextMenuEnabled():
+            return
+        menu = self.getMenu()
+        # menu = self.scene().addParentContextMenus(self, menu, ev)
+        pos = ev.screenPos()
+        menu.popup(QtCore.QPoint(pos.x(), pos.y()))
+    
+    def getMenu(self):
+        if self.menu is None:
+            self.menu = QtGui.QMenu()
+            self.menu.setTitle("ROI Menu")
+            printAct = QtGui.QAction("Print Something", self.menu)
+            printAct.triggered.connect(self.printClicked)
+            deleteAct = QtGui.QAction("Delete Acquisition", self.menu)
+            deleteAct.triggered.connect(self.deleteAcquisition)
+            self.menu.addAction(printAct)
+            self.menu.addAction(deleteAct)
+            self.menu.printAct = printAct
+        return self.menu
+    
+    def printClicked(self):
+        print('I have been clicked')
+
+    def deleteAcquisition(self):
+        print('Deleting ROI: ', self.rowID)
+        # self.model.deleteRow(self.rowID)
 
     def paint(self, p, opt, widget):
         r = self.boundingRect()
@@ -273,36 +300,34 @@ class AcquisitionROI(pg.ROI):
         p.scale(r.width(), r.height())## workaround for GL bug
         r = QtCore.QRectF(r.x()/r.width(), r.y()/r.height(), 1,1)
         
-        # p.drawEllipse(r)
-        #pen0 = pg.mkPen({'color':"#C0C0C0", 'width':3})
-        #pen1 = pg.mkPen({'color':"#C0C0C0", 'width':1})
+        pen0 = p.pen()
+        pen0.setWidth(4)
+        pen1 = p.pen()
+        pen0.setWidth(1)
 
         if self.shutterconfig == 'Left':
-            pen = p.pen()
-            pen.setWidth(3)
-            p.setPen(pen)
+            p.setPen(pen0)
             p.drawArc(r,90*16,180*16)
-            pen = p.pen()
-            pen.setWidth(1)
-            p.setPen(pen)
+            p.setPen(pen1)
             p.drawArc(r,-90*16,180*16)
         elif self.shutterconfig == 'Right':
-            pen = p.pen()
-            pen.setWidth(1)
-            p.setPen(pen)
+            p.setPen(pen1)
             p.drawArc(r,90*16,180*16)
-            pen = p.pen()
-            pen.setWidth(3)
-            p.setPen(pen)
+            p.setPen(pen0)
             p.drawArc(r,-90*16,180*16)
         else:
-            pen = p.pen()
-            pen.setWidth(3)
-            p.setPen(pen)
+            p.setPen(pen1)
             p.drawArc(r,90*16,180*16)
             p.drawArc(r,-90*16,180*16)
         
-        
+        ''' Playing with text display
+        serifFont = QtGui.QFont()
+        serifFont.setPixelSize(1)
+        p.rotate(180)
+        p.setFont(serifFont)
+        p.drawText(r.x(),r.y(),str(self.rowID))
+        p.rotate(-180)
+        '''
         
     def shape(self):
         if self.path is None:
@@ -394,7 +419,7 @@ class CurrentFOV(pg.ROI):
         if not self.contextMenuEnabled():
             return
         menu = self.getMenu()
-        menu = self.scene().addParentContextMenus(self, menu, ev)
+        # menu = self.scene().addParentContextMenus(self, menu, ev)
         pos = ev.screenPos()
         menu.popup(QtCore.QPoint(pos.x(), pos.y()))
     
