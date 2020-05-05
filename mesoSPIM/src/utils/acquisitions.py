@@ -358,12 +358,19 @@ class AcquisitionList(list):
         sconfig_set = set(sconfig_list)
         return len(sconfig_set)
 
+    def get_angle_set(self):
+        angle_list = [a['rot'] for a in self]
+        return set(angle_list)
+
     def get_n_angles(self):
         """Get the number of unique angles"""
-        angle_list = [a['rot'] for a in self]
-        angle_set = set(angle_list)
+        angle_set = self.get_angle_set()
         return len(angle_set)
 
+    def get_angle_list(self):
+        angle_set = self.get_angle_set()
+        return list(angle_set)
+    
     def get_n_lasers(self):
         """Get the number of unique laser lines"""
         laser_list = [a['laser'] for a in self]

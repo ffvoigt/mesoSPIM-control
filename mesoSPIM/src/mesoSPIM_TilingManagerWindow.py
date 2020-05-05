@@ -25,9 +25,13 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         self.cfg = parent.cfg
 
         self.state = mesoSPIM_StateSingleton()
-        self.state.sig_updated.connect(self.update)
+        self.state.sig_updated.connect(self.update_current_fov)
 
-        self.model = None
+        self.model = self.parent.model
+        self.model.dataChanged.connect(self.update_acquisition_view)
+        self.model.modelReset.connect(self.update_acquisition_view)
+        self.model.dataChanged.connect(self.update_rotation_combobox)
+        self.model.modelReset.connect(self.update_rotation_combobox)
 
         ''' Change the PyQtGraph-Options in White Mode'''
         pg.setConfigOptions(imageAxisOrder='row-major')
@@ -45,16 +49,17 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
             loadUi('../gui/mesoSPIM_TilingManagerWindow.ui', self)
         else:
             loadUi('gui/mesoSPIM_TilingManagerWindow.ui', self)
-        self.setWindowTitle('mesoSPIM-Control: Tiling Manager')
+        self.setWindowTitle('mesoSPIM-Control: Tiling Viewer')
 
         self.viewBox = self.graphicsLayoutWidget.addViewBox(lockAspect=1.0)
         self.viewBox.setRange(xRange=[-10000,10000], yRange=[-10000,10000])
+
+        self.displayed_rotation = self.state['position']['theta_pos']
+        self.current_rotation = self.state['position']['theta_pos']
+        self.RotationSelectionComboBox.currentTextChanged.connect(self.update_displayed_rotation)
         
         self.grid = pg.GridItem()
         self.viewBox.addItem(self.grid)
-
-        self.old_x_pos = 0
-        self.old_y_pos = 0
 
         self.old_zoom = self.state['zoom']
         self.zoom = self.state['zoom']
@@ -62,58 +67,87 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         self.pixelsize = self.state['pixelsize']
         self.x_pixels = self.cfg.camera_parameters['x_pixels']
         self.y_pixels = self.cfg.camera_parameters['y_pixels']
-
-        self.update_fov(self.pixelsize)
+        self.x_fov = self.y_pixels * self.pixelsize
+        self.y_fov = self.x_pixels * self.pixelsize
+        # self.update_fov(self.pixelsize)
         
         self.currentFOV = CurrentFOV([0,0],[self.x_fov, self.y_fov], pen='r')
         self.viewBox.addItem(self.currentFOV)
 
-        self.tileROI = EllipticalTileROI([0,0],[1000,2000])
-        self.viewBox.addItem(self.tileROI)
-
-        # self.myCrossHair = CrosshairROI([0,0], [1000,1000])
-        # self.viewBox.addItem(self.myCrossHair)
-        
         self.rois = []
-        xmax = 3
-        ymax = 4
-        for i in range(1,xmax+1):
-            for j in range(1,ymax+1):
-                self.rois.append(pg.CircleROI([i*1000, j*1000], [1200, 1200], pen=(i+j,xmax+ymax)))
+        
+    def set_model(self, model):
+        self.model = model
+
+    def update_current_fov(self):
+        _position, self.pixelsize = self.state.get_parameter_list(['position','pixelsize'])
+        self.x_pos = _position['x_pos']
+        self.y_pos = _position['y_pos']
+        self.current_rotation = _position['theta_pos']
+        
+        if abs(self.displayed_rotation - self.current_rotation) < 0.1:
+            if self.currentFOV not in self.viewBox.addedItems:
+                self.viewBox.addItem(self.currentFOV)
+      
+        else:
+            self.viewBox.removeItem(self.currentFOV)
+
+        self.currentFOV.setPos((self.x_pos, self.y_pos), update=False)
+        self.x_fov = self.y_pixels * self.pixelsize
+        self.y_fov = self.x_pixels * self.pixelsize
+        self.currentFOV.setSize((self.x_fov, self.y_fov))
+
+
+    def update_rotation_combobox(self):
+        self.RotationSelectionComboBox.blockSignals(True)
+        self.RotationSelectionComboBox.clear()
+        self.RotationSelectionComboBox.addItem('Current')
+        list_of_rotations = self.model.getUniqueRotationList()
+        list_of_rotations.sort() # Display rotations in ascending order
+        list_of_rotations = [str(round(item, 2)) for item in list_of_rotations]
+        self.RotationSelectionComboBox.addItems(list_of_rotations)
+        self.RotationSelectionComboBox.blockSignals(False)
+
+    @QtCore.pyqtSlot(str)     
+    def update_displayed_rotation(self, new_rotation_string):
+        if new_rotation_string == 'Current':
+            self.displayed_rotation = self.current_rotation
+        else:
+            print('Trying to convert: ', new_rotation_string)
+            self.displayed_rotation = float(new_rotation_string)
+
+        self.update_acquisition_view()
+
+    def update_acquisition_view(self):
+        ''' Goes through the acquisition model and updates the view '''
+
+        for r in self.rois:
+            self.viewBox.removeItem(r)
+        self.rois = []
+
+        row_count = self.model.rowCount()
+
+        for row in range(row_count):
+            rotation = self.model.getRotationPosition(row)
+            ''' Only display stacks with rotations close to the displayed rotation '''
+            if abs(self.displayed_rotation - rotation) <= 0.5:
+                xpos = self.model.getXPosition(row)
+                ypos = self.model.getYPosition(row)
+                zoom = self.model.getZoom(row)
+
+                pixelsize = self.cfg.pixelsize[zoom]
+                x_fov = self.y_pixels * pixelsize
+                y_fov = self.x_pixels * pixelsize
+
+                self.rois.append(EllipticalTileROI([xpos, ypos], [x_fov, y_fov], pen=(row,row_count)))
 
         for r in self.rois:
             self.viewBox.addItem(r)
 
-    def set_model(self, model):
-        self.model = model
+    def compare_rotation_angles(self, angle0, angle1, delta_max):
+        if abs(delta0-angle1) < delta_max:
+            return True
 
-    def update(self):
-        _position, _pixelsize = self.state.get_parameter_list(['position','pixelsize'])
-        self.x_pos = _position['x_pos']
-        self.y_pos = _position['y_pos']
-
-        delta_x = self.x_pos - self.old_x_pos
-        delta_y = self.y_pos - self.old_y_pos
-        delta_pixelsize = _pixelsize - self.pixelsize
-
-        if delta_x != 0:
-            self.old_x_pos = self.x_pos
-            self.currentFOV.moveBy(delta_x,0)
-
-        if delta_y != 0:
-            self.old_y_pos = self.y_pos
-            self.currentFOV.moveBy(0,delta_y)
-
-        if delta_pixelsize != 0:
-            scaling_factor = _pixelsize/self.pixelsize
-            self.update_fov(_pixelsize)
-            self.currentFOV.scale([scaling_factor,scaling_factor])
-
-    def update_fov(self, pixelsize):
-        ''' Because of the camera rotation by 90 degrees, x and y are interchanged.'''
-        self.pixelsize = pixelsize
-        self.x_fov = self.y_pixels * self.pixelsize
-        self.y_fov = self.x_pixels * self.pixelsize
 
 class EllipticalTileROI(pg.ROI):
     """
@@ -129,13 +163,62 @@ class EllipticalTileROI(pg.ROI):
     """
     def __init__(self, pos, size, **args):
         self.path = None
+        ''' Shift the position so that the center is the middle'''
+        pos = (pos[0]-int(size[0]/2),pos[1]-int(size[1]/2))
+
         pg.ROI.__init__(self, pos, size, **args)
         self.sigRegionChanged.connect(self._clearPath)
         self.translatable = False
                    
     def _clearPath(self):
         self.path = None
+
+    def hoverEvent(self, ev):
+        hover = False
+        if not ev.isExit():
+            if self.translatable and ev.acceptDrags(QtCore.Qt.LeftButton):
+            #if ev.acceptDrags(QtCore.Qt.LeftButton):
+                hover=True
+                
+            for btn in [QtCore.Qt.LeftButton, QtCore.Qt.RightButton, QtCore.Qt.MidButton]:
+                if int(self.acceptedMouseButtons() & btn) > 0 and ev.acceptClicks(btn):
+                    hover=True
+            if self.contextMenuEnabled():
+                ev.acceptClicks(QtCore.Qt.RightButton)
+                
+        if hover:
+            self.setMouseHover(True)
+            ev.acceptClicks(QtCore.Qt.LeftButton)  ## If the ROI is hilighted, we should accept all clicks to avoid confusion.
+            ev.acceptClicks(QtCore.Qt.RightButton)
+            ev.acceptClicks(QtCore.Qt.MidButton)
+            self.sigHoverEvent.emit(self)
+        else:
+            self.setMouseHover(False)
+
+    def setMouseHover(self, hover):
+        ## Inform the ROI that the mouse is(not) hovering over it
+        if self.mouseHovering == hover:
+            return
+        self.mouseHovering = hover
+        self._updateHoverColor()
         
+    def _updateHoverColor(self):
+        pen = self._makePen()
+        if self.currentPen != pen:
+            self.currentPen = pen
+            self.update()
+        
+    def _makePen(self):
+        # Generate the pen color for this ROI based on its current state.
+        if self.mouseHovering:
+            return pg.functions.mkPen(255, 255, 0)
+        else:
+            return self.pen
+
+    def contextMenuEnabled(self):
+        # return self.removable
+        return True
+
     def paint(self, p, opt, widget):
         r = self.boundingRect()
         p.setRenderHint(QtGui.QPainter.Antialiasing)
@@ -178,7 +261,7 @@ class CurrentFOV(pg.ROI):
             size=[1,1]
         if pos == None:
             pos = [0,0] 
-        size = [int(i/2) for i in size] # Divide size by 2 to convert FOV -> radius
+        # size = [int(i/2) for i in size] # Divide size by 2 to convert FOV -> radius
         self._shape = None
         pg.ROI.__init__(self, pos, size, **kargs)
         
@@ -252,3 +335,46 @@ class CurrentFOV(pg.ROI):
     
     def printClicked(self):
         print('I have been clicked')
+
+    def setSize(self, size, center=None, centerLocal=None, snap=False, update=True, finish=True):
+        """
+        Set the ROI's size.
+        
+        =============== ==========================================================================
+        **Arguments**
+        size            (Point | QPointF | sequence) The final size of the ROI
+        center          (None | Point) Optional center point around which the ROI is scaled,
+                        expressed as [0-1, 0-1] over the size of the ROI.
+        centerLocal     (None | Point) Same as *center*, but the position is expressed in the
+                        local coordinate system of the ROI
+        snap            (bool) If True, the final size is snapped to the nearest increment (see
+                        ROI.scaleSnapSize)
+        update          (bool) See setPos()
+        finish          (bool) See setPos()
+        =============== ==========================================================================
+        """
+        if update not in (True, False):
+            raise TypeError("update argument must be bool")
+        size = [int(i/2) for i in size] # Divide size by 2 to convert FOV -> radius
+        size = pg.Point(size)
+        if snap:
+            size[0] = round(size[0] / self.scaleSnapSize) * self.scaleSnapSize
+            size[1] = round(size[1] / self.scaleSnapSize) * self.scaleSnapSize
+
+        if centerLocal is not None:
+            oldSize = pg.Point(self.state['size'])
+            oldSize[0] = 1 if oldSize[0] == 0 else oldSize[0]
+            oldSize[1] = 1 if oldSize[1] == 0 else oldSize[1]
+            center = pg.Point(centerLocal) / oldSize
+
+        if center is not None:
+            center = pg.Point(center)
+            c = self.mapToParent(pg.Point(center) * self.state['size'])
+            c1 = self.mapToParent(pg.Point(center) * size)
+            newPos = self.state['pos'] + c - c1
+            self.setPos(newPos, update=False, finish=False)
+        
+        self.prepareGeometryChange()
+        self.state['size'] = size
+        if update:
+            self.stateChanged(finish=finish)
