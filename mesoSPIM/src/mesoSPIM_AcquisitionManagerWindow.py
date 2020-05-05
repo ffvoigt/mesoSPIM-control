@@ -138,13 +138,14 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
         logger.info('Thread ID at Startup: '+str(int(QtCore.QThread.currentThreadId())))
 
         self.selection_model.selectionChanged.connect(self.selected_row_changed)
-
+        
         ''' Display initial time prediction '''
         self.update_acquisition_time_prediction()
 
         ''' Display Tiling Manager Window '''
         self.tiling_manager_window = mesoSPIM_TilingManagerWindow(self)
         self.tiling_manager_window.show()
+        self.selection_model.selectionChanged.connect(self.tiling_manager_window.update_selection)
  
 
     def enable(self):

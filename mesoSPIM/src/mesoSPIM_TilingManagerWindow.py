@@ -25,7 +25,7 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         self.cfg = parent.cfg
 
         self.state = mesoSPIM_StateSingleton()
-        self.state.sig_updated.connect(self.update_current_fov)
+        self.state.sig_updated.connect(self.check_for_state_changes)
 
         self.model = self.parent.model
         self.model.dataChanged.connect(self.update_acquisition_view)
@@ -54,8 +54,10 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         self.viewBox = self.graphicsLayoutWidget.addViewBox(lockAspect=1.0)
         self.viewBox.setRange(xRange=[-10000,10000], yRange=[-10000,10000])
 
-        self.displayed_rotation = self.state['position']['theta_pos']
-        self.current_rotation = self.state['position']['theta_pos']
+        self.position = self.state['position']
+        self.displayed_rotation = self.position['theta_pos']
+        self.current_rotation = self.position['theta_pos']
+
         self.RotationSelectionComboBox.currentTextChanged.connect(self.update_displayed_rotation)
         
         self.grid = pg.GridItem()
@@ -64,39 +66,56 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         self.old_zoom = self.state['zoom']
         self.zoom = self.state['zoom']
 
+        self.fovPen = pg.mkPen({'color':"F00", 'width':2})
+        self.roiPen = pg.mkPen({'color':"#C0C0C0", 'width':2})
+
         self.pixelsize = self.state['pixelsize']
         self.x_pixels = self.cfg.camera_parameters['x_pixels']
         self.y_pixels = self.cfg.camera_parameters['y_pixels']
         self.x_fov = self.y_pixels * self.pixelsize
         self.y_fov = self.x_pixels * self.pixelsize
-        # self.update_fov(self.pixelsize)
         
-        self.currentFOV = CurrentFOV([0,0],[self.x_fov, self.y_fov], pen='r')
+        self.currentFOV = CurrentFOV([0,0],[self.x_fov, self.y_fov], pen=self.fovPen)
         self.viewBox.addItem(self.currentFOV)
 
         self.rois = []
         
-    def set_model(self, model):
-        self.model = model
+    def check_for_state_changes(self):
+        ''' Checks if there are changes in the state that require redrawing of parts of the 
+        Tiling Manager Window and initiates updates when necessary. '''
+
+        _position, _pixelsize = self.state.get_parameter_list(['position','pixelsize'])
+        if self.position != _position:
+            self.position = _position
+            if self.RotationSelectionComboBox.currentText() == 'Current':
+                if self.displayed_rotation != self.position['theta_pos']:
+                    
+
+            self.update_acquisition_view()
+            self.update_current_fov()
+
+        if self.pixelsize != _pixelsize:
+            self.pixelsize = _pixelsize
+            self.update_acquisition_view()
+            self.update_current_fov()
 
     def update_current_fov(self):
-        _position, self.pixelsize = self.state.get_parameter_list(['position','pixelsize'])
-        self.x_pos = _position['x_pos']
-        self.y_pos = _position['y_pos']
-        self.current_rotation = _position['theta_pos']
+        self.x_pos = self.position['x_pos']
+        self.y_pos = self.position['y_pos']
+        self.current_rotation = self.position['theta_pos']
         
         if abs(self.displayed_rotation - self.current_rotation) < 0.1:
             if self.currentFOV not in self.viewBox.addedItems:
                 self.viewBox.addItem(self.currentFOV)
       
         else:
-            self.viewBox.removeItem(self.currentFOV)
+            if self.currentFOV in self.viewBox.addedItems:
+                self.viewBox.removeItem(self.currentFOV)
 
         self.currentFOV.setPos((self.x_pos, self.y_pos), update=False)
         self.x_fov = self.y_pixels * self.pixelsize
         self.y_fov = self.x_pixels * self.pixelsize
         self.currentFOV.setSize((self.x_fov, self.y_fov))
-
 
     def update_rotation_combobox(self):
         self.RotationSelectionComboBox.blockSignals(True)
@@ -113,18 +132,32 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
         if new_rotation_string == 'Current':
             self.displayed_rotation = self.current_rotation
         else:
-            print('Trying to convert: ', new_rotation_string)
             self.displayed_rotation = float(new_rotation_string)
-
+        
         self.update_acquisition_view()
+        self.update_current_fov()
 
+    def update_selection(self, new_selection, old_selection):
+        if new_selection.indexes() != []:
+            new_row = new_selection.indexes()[0].row()
+            for roi in self.rois:
+                if roi.rowID == new_row:
+                    roi.setSelected(True)
+                        
+        if old_selection.indexes() != []:
+            old_row = old_selection.indexes()[0].row()
+            for roi in self.rois:
+                if roi.rowID == old_row:
+                    roi.setSelected(False)
+    
     def update_acquisition_view(self):
         ''' Goes through the acquisition model and updates the view '''
 
         for r in self.rois:
             self.viewBox.removeItem(r)
-        self.rois = []
 
+        self.rois = []
+        
         row_count = self.model.rowCount()
 
         for row in range(row_count):
@@ -139,17 +172,12 @@ class mesoSPIM_TilingManagerWindow(QtWidgets.QWidget):
                 x_fov = self.y_pixels * pixelsize
                 y_fov = self.x_pixels * pixelsize
 
-                self.rois.append(EllipticalTileROI([xpos, ypos], [x_fov, y_fov], pen=(row,row_count)))
+                self.rois.append(AcquisitionROI([xpos, ypos], [x_fov, y_fov], rowID=row, pen=self.roiPen))
 
         for r in self.rois:
             self.viewBox.addItem(r)
 
-    def compare_rotation_angles(self, angle0, angle1, delta_max):
-        if abs(delta0-angle1) < delta_max:
-            return True
-
-
-class EllipticalTileROI(pg.ROI):
+class AcquisitionROI(pg.ROI):
     """
     Elliptical ROI subclass 
 
@@ -161,7 +189,7 @@ class EllipticalTileROI(pg.ROI):
     ============== =============================================================
     
     """
-    def __init__(self, pos, size, **args):
+    def __init__(self, pos, size, rowID,**args):
         self.path = None
         ''' Shift the position so that the center is the middle'''
         pos = (pos[0]-int(size[0]/2),pos[1]-int(size[1]/2))
@@ -169,6 +197,11 @@ class EllipticalTileROI(pg.ROI):
         pg.ROI.__init__(self, pos, size, **args)
         self.sigRegionChanged.connect(self._clearPath)
         self.translatable = False
+
+        self.rowID = rowID
+
+        self.roiSelectedPen = pg.mkPen({'color':"#FF0", 'width':2})
+        self.stdPen = self.currentPen
                    
     def _clearPath(self):
         self.path = None
@@ -206,6 +239,14 @@ class EllipticalTileROI(pg.ROI):
         pen = self._makePen()
         if self.currentPen != pen:
             self.currentPen = pen
+            self.update()
+
+    def setSelected(self, boolean):
+        if boolean:
+            self.currentPen = self.roiSelectedPen
+            self.update()
+        else:
+            self.currentPen = self.stdPen
             self.update()
         
     def _makePen(self):
