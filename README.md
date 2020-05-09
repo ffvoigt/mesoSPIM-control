@@ -39,12 +39,12 @@ In addition (for Anaconda), the following packages need to be installed:
 * nidaqmx (`python -m pip install nidaqmx`)
 * indexed (`python -m pip install indexed.py`)
 * serial (`python -m pip install pyserial`)
-* pyqtgraph  (`python -m pip install pyqtgraph`)
+* pyqtgraph  (`python -m pip install pyqtgraph`) :warning: If you get error messages on the console in live mode, you can get rid of them by installing a more recent development version of pyqtgraph (`python -m pip install pyqtgraph==0.11.0rc0`)
 * qdarkstyle (`python -m pip install qdarkstyle`)
 * pywinusb  (`python -m pip install pywinusb`)
 * PIPython (part of the Physik Instrumente software collection. Unzip it, `cd` to the directory with the Anaconda terminal as an admin user, then install with `python setup.py install`. Test install with  test installation with `import pipython`). You can also download PIPython [here](https://github.com/royerlab/pipython)
 * tifffile (`python -m pip install tifffile`)
-* ([PyVCAM when using Photometrics cameras](https://github.com/Photometrics/PyVCAM)
+* [PyVCAM when using Photometrics cameras](https://github.com/Photometrics/PyVCAM)
 
 #### Preparing python bindings for device drivers
 * For PI stages, copy `C:\ProgramData\PI\GCSTranslator\PI_GCS2_DLL_x64.dll` in the main mesoSPIM folder: `PI_GCS2_DLL_x64.dll`

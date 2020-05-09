@@ -311,6 +311,9 @@ class AcquisitionModel(QtCore.QAbstractTableModel):
     def getRotationPosition(self, row):
         return self._table[row]['rot']
 
+    def getUniqueRotationList(self):
+        return self._table.get_angle_list()
+
     def getTotalImageCount(self):
         ''' gets the total number of planes from the model '''
         return self._table.get_image_count()
@@ -334,6 +337,10 @@ class AcquisitionModel(QtCore.QAbstractTableModel):
         self.modelAboutToBeReset.emit()
         self._table = pickle.load(open(filename, "rb" ))
         self.modelReset.emit()
+
+    def deleteRow(self, row):
+        self.model.removeRows(row, 1)
+        self.dataChanged.emit()
 
     def deleteTable(self):
         self.modelAboutToBeReset.emit()

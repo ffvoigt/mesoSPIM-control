@@ -15,6 +15,8 @@ from PyQt5.uic import loadUi
 ''' mesoSPIM imports '''
 from .mesoSPIM_State import mesoSPIM_StateSingleton
 
+from .mesoSPIM_TilingManagerWindow import mesoSPIM_TilingManagerWindow
+
 from .utils.models import AcquisitionModel
 
 from .utils.delegates import (ComboDelegate,
@@ -119,6 +121,7 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
         self.PreviewSelectionButton.clicked.connect(self.preview_acquisition)
 
         self.TilingWizardButton.clicked.connect(self.run_tiling_wizard)
+        self.TilingManagerButton.clicked.connect(self.open_tiling_manager)
         self.FilenameWizardButton.clicked.connect(self.generate_filenames)
         self.FocusTrackingWizardButton.clicked.connect(self.run_focus_tracking_wizard)
         self.ImageProcessingWizardButton.clicked.connect(self.run_image_processing_wizard)
@@ -135,12 +138,14 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
         logger.info('Thread ID at Startup: '+str(int(QtCore.QThread.currentThreadId())))
 
         self.selection_model.selectionChanged.connect(self.selected_row_changed)
-
+        
         ''' Display initial time prediction '''
         self.update_acquisition_time_prediction()
 
-        '''XML writing testcode'''
-        # self.GenerateXMLButton.clicked.connect(self.generate_xml)
+        ''' Display Tiling Manager Window '''
+        self.tiling_manager_window = mesoSPIM_TilingManagerWindow(self)
+        self.tiling_manager_window.show()
+        self.selection_model.selectionChanged.connect(self.tiling_manager_window.update_selection)
  
 
     def enable(self):
@@ -461,6 +466,9 @@ class mesoSPIM_AcquisitionManagerWindow(QtWidgets.QWidget):
     def display_warning(self, string):
         warning = QtWidgets.QMessageBox.warning(None,'mesoSPIM Warning',
                 string, QtWidgets.QMessageBox.Ok) 
+
+    def open_tiling_manager(self):
+        self.tiling_manager_window.show()
 
 
 

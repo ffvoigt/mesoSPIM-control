@@ -26,9 +26,6 @@ from .mesoSPIM_State import mesoSPIM_StateSingleton
 from .mesoSPIM_Core import mesoSPIM_Core
 from .devices.joysticks.mesoSPIM_JoystickHandlers import mesoSPIM_JoystickHandler
 
-from .utils.demo_threads import mesoSPIM_DemoThread
-
-
 class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
     '''
     Main application window which instantiates worker objects and moves them
@@ -185,6 +182,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             self.autofocus_plot_window.close()
         except:
             pass
+        self.acquisition_manager_window.tiling_manager_window.close()
         self.close()
 
     def display_icons(self):
