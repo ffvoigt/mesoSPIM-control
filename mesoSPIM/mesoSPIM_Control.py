@@ -24,7 +24,7 @@ import os
 import sys
 import importlib.util
 
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 from src.mesoSPIM_MainWindow import mesoSPIM_MainWindow
 
@@ -147,7 +147,7 @@ def main(embed_console=False,demo_mode=False):
         cfg = load_config_UI(current_path)
 
     app = QtWidgets.QApplication(sys.argv)
-    
+    app.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling)     
     dark_mode_check(cfg, app)
     stage_referencing_check(cfg)
     ex = mesoSPIM_MainWindow(cfg)
