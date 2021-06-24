@@ -1,6 +1,8 @@
 __pycache__
 /**/__pycache__
 .ipynb_checkpoints
+/env
+/venv
 /**/.ipynb_checkpoints
 **/*.ipynb_checkpoints/
 mesoSPIM/legacy/*
@@ -33,40 +35,15 @@ mesoSPIM/src/devices/stages/galil/gclib/gclib\.py
 mesoSPIM/src/devices/stages/galil/gclib\.py
 
 mesoSPIM/src/devices/stages/galil/gclib/__init__\.py
-
 mesoSPIM/config/etl_parameters/ETL-parameters - Fabian - DBE - H45\.csv
-
-
 mesoSPIM/src/mesoSPIM_DemoSerial\.py
-
-
-
 mesoSPIM/src/devices/stages/galil/gclib/gclib\.py
-
-
-
 mesoSPIM/src/devices/stages/galil/gclib\.py
-
-
-
 mesoSPIM/src/devices/stages/galil/gclib/__init__\.py
-
-
-
 mesoSPIM/config/etl_parameters/ETL-parameters - Fabian - DBE - H45\.csv
-
-
-
 *.log
-
-
-
 mesoSPIM/src/devices/zoom/dynamixel\.zip
-
 mesoSPIM/acq/
-
-
-
 mesoSPIM/tmp/
 !mesoSPIM/tmp/readme.txt
 *.acq
