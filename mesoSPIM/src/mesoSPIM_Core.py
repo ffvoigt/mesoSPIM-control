@@ -196,7 +196,10 @@ class mesoSPIM_Core(QtCore.QObject):
         self.stopflag = False
         self.pauseflag = False
 
-        self.TTL_mode_enabled_in_cfg = self.cfg.stage_parameters['ttl_motion_enabled']
+        if hasattr(self.cfg, 'stage_parameters') and 'ttl_motion_enabled' in self.cfg.stage_parameters.keys():
+            self.TTL_mode_enabled_in_cfg = self.cfg.stage_parameters['ttl_motion_enabled']
+        else:
+            self.TTL_mode_enabled_in_cfg = False
 
         logger.debug('Thread ID at Startup: '+str(int(QtCore.QThread.currentThreadId())))
         self.metadata_file = None

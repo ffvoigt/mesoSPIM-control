@@ -43,8 +43,8 @@ Physical channels must be connected in certain order:
 acquisition_hardware = {'master_trigger_out_line' : 'PXI1Slot4/port0/line0',
                         'camera_trigger_source' : '/PXI1Slot4/PFI0',
                         'camera_trigger_out_line' : '/PXI1Slot4/ctr0',
-                        'stage_trigger_source' : '/PXI1Slot4/PFI0',
-                        'stage_trigger_out_line' : '/PXI1Slot4/ctr1',
+                        'stage_trigger_source' : '/PXI1Slot4/PFI0', # NEW parameter!
+                        'stage_trigger_out_line' : '/PXI1Slot4/ctr1', # NEW parameter!
                         'galvo_etl_task_line' : 'PXI1Slot4/ao0:3',
                         'galvo_etl_task_trigger_source' : '/PXI1Slot4/PFI0',
                         'laser_task_line' :  'PXI1Slot4/ao4:7',
@@ -234,6 +234,7 @@ The stage assignment dictionary assigns a mesoSPIM stage (xyzf and theta - dict 
 which are the values of the dict.
 '''
 
+# NEW parameter!
 asi_parameters = {'COMport' : 'COM32',
                   'baudrate' : 115200,
                   'stage_assignment': {'x':'X', 'y':'V', 'z':'Z', 'theta':'T', 'f':'Y'},
@@ -247,8 +248,8 @@ For a Dynamixel FilterWheel, valid baudrate and servoi_id are necessary.
 '''
 filterwheel_parameters = {'filterwheel_type' : 'Demo', # 'Demo', 'Ludl', 'Dynamixel'
                           'COMport' : 'COM3',
-                          'baudrate' : 115200, # relevant only for 'Dynamixel'
-                          'servo_id' :  1, # relevant only for 'Dynamixel'
+                          'baudrate' : 115200, # relevant only for 'Dynamixel' # NEW parameter!
+                          'servo_id' :  1, # relevant only for 'Dynamixel' # NEW parameter!
                           }
 '''
 filterdict contains filter labels and their positions. The valid positions are:
@@ -345,7 +346,7 @@ startup = {
 'max_laser_voltage':10,
 'intensity' : 10,
 'shutterstate':False, # Is the shutter open or not?
-'shutterconfig':'Right', # Can be "Left", "Right","Both","Interleaved"
+'shutterconfig':'Right', # Can be "Left", "Right","Both"
 'laser_interleaving':False,
 'filter' : '405-488-561-640-Quadrupleblock',
 'etl_l_delay_%' : 7.5,
@@ -374,8 +375,8 @@ startup = {
 'laser_r_delay_%' : 10,
 'laser_r_pulse_%' : 87,
 'laser_r_max_amplitude_%' : 100,
-'stage_trigger_delay_%' : 92.5, # Set to 92.5 for stage triggering exactly after the ETL sweep
-'stage_trigger_pulse_%' : 1,
+'stage_trigger_delay_%' : 92.5, # NEW PARAMETER
+'stage_trigger_pulse_%' : 1, # NEW PARAMETER
 'camera_delay_%' : 10,
 'camera_pulse_%' : 1,
 'camera_exposure_time':0.02,

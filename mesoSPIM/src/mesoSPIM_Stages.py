@@ -117,14 +117,17 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.y_rot_position = self.cfg.stage_parameters['y_rot_position']
         self.z_rot_position = self.cfg.stage_parameters['z_rot_position']
 
-        self.ttl_motion_enabled_during_acq = self.cfg.stage_parameters['ttl_motion_enabled']
+        if hasattr(self.cfg, 'stage_parameters') and 'ttl_motion_enabled' in self.cfg.stage_parameters.keys():
+            self.ttl_motion_enabled_during_acq = self.cfg.stage_parameters['ttl_motion_enabled']
+        else:
+            self.ttl_motion_enabled_during_acq = False
         self.ttl_motion_currently_enabled = False
         '''
         Debugging code
         '''
         # self.sig_status_message.connect(lambda string, time: print(string))
 
-        logger.info('Thread ID at Startup: ' + str(int(QtCore.QThread.currentThreadId())))
+        logger.debug('Thread ID at Startup: ' + str(int(QtCore.QThread.currentThreadId())))
 
     def create_position_dict(self):
         self.position_dict = {'x_pos': self.x_pos,
@@ -154,7 +157,6 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.create_internal_position_dict()
 
         # self.state['position'] = self.int_position_dict
-
         self.sig_position.emit(self.int_position_dict)
 
     # @QtCore.pyqtSlot(dict)

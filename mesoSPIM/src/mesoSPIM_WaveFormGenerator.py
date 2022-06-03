@@ -56,13 +56,13 @@ class mesoSPIM_WaveFormGenerator(QtCore.QObject):
             self.state['stage_trigger_delay_%'] = self.cfg.startup['stage_trigger_delay_%']
         else:
             self.state['stage_trigger_delay_%'] = 92.5
-            print("Warning: parameter 'stage_trigger_delay_%' not found in config file, set to default 92.5. "
+            logger.info("Parameter 'stage_trigger_delay_%' not found in config file, set to default 92.5."
                         "Update the config file, startup{} dictionary")
         if 'stage_trigger_pulse_%' in self.cfg.startup.keys():
             self.state['stage_trigger_pulse_%'] = self.cfg.startup['stage_trigger_pulse_%']
         else:
             self.state['stage_trigger_pulse_%'] = 1
-            print("Warning: parameter 'stage_trigger_pulse_%' not found in config file, set to default 1. "
+            logger.info("Parameter 'stage_trigger_pulse_%' not found in config file, set to default 1. "
                         "Update the config file, startup{} dictionary")
 
     @QtCore.pyqtSlot(dict)
