@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 from PyQt5 import QtCore
 
 from .mesoSPIM_State import mesoSPIM_StateSingleton
-
+import nidaqmx
 
 class mesoSPIM_Stage(QtCore.QObject):
     '''
@@ -727,6 +727,7 @@ class mesoSPIM_PI_NtoN_piezo(mesoSPIM_Stage):
     def __init__(self, parent=None):
         super().__init__(parent)
         from pipython import GCSDevice, pitools
+       
         self.pitools = pitools
         self.pi = self.cfg.pi_parameters
         print("Connecting stage drive...")
@@ -775,7 +776,12 @@ class mesoSPIM_PI_NtoN_piezo(mesoSPIM_Stage):
             else:
                 setattr(self.pi_stages, axis_name, None)
 
-        logger.info('mesoSPIM_PI_NtoN: started')
+        self.f_pos = self.cfg.stage_parameters['startfocus']
+        self.create_position_dict()
+        self.create_internal_position_dict()
+
+
+        logger.info('mesoSPIM_PI_NtoN_piezo: started')
 
 
     def wait_for_controller(self, controller):
@@ -801,6 +807,9 @@ class mesoSPIM_PI_NtoN_piezo(mesoSPIM_Stage):
         '''report stage position'''
         for axis_name in self.pi['axes_names']:
             pidevice_name = 'pidevice_' + str(axis_name)
+
+            
+            
             if hasattr(self.pi_stages, pidevice_name):
                 try:
                     if axis_name is None:
@@ -812,11 +821,15 @@ class mesoSPIM_PI_NtoN_piezo(mesoSPIM_Stage):
                 except:
                     print(f"Failed to report_position for axis_name {axis_name}, pidevice_name {pidevice_name}.")
             else:
-                pos = 0
+                if axis_name == 'f':
+                    self.int_f_pos = self.f_pos + self.int_f_pos_offset
+                else:
+                    pos = 0
 
-            setattr(self, (axis_name + '_pos'), pos)
-            int_pos = pos + getattr(self, ('int_' + axis_name + '_pos_offset'))
-            setattr(self, ('int_' + axis_name + '_pos'), int_pos)
+            if axis_name != 'f':
+                setattr(self, (axis_name + '_pos'), pos)
+                int_pos = pos + getattr(self, ('int_' + axis_name + '_pos_offset'))
+                setattr(self, ('int_' + axis_name + '_pos'), int_pos)
 
         self.create_position_dict()
         self.create_internal_position_dict()
@@ -826,7 +839,20 @@ class mesoSPIM_PI_NtoN_piezo(mesoSPIM_Stage):
 
     def move_relative(self, move_dict, wait_until_done=False):
         ''' PI move relative method '''        
-        for axis_move in move_dict.keys():        
+        for axis_move in move_dict.keys():
+            if axis_move == 'f_rel':
+                f_rel = move_dict['f_rel']
+
+                
+                if self.f_min < self.f_pos + f_rel and self.f_max > self.f_pos + f_rel:
+                    self.f_pos = self.f_pos + f_rel
+                    with nidaqmx.Task() as task:
+                        task.ao_channels.add_ao_voltage_chan(self.pi['ao_channel'])
+                        task.write([self.f_pos/100], auto_start=True)
+                    
+                else:
+                    self.sig_status_message.emit('Relative movement stopped: f Motion limit would be reached!')        
+
             axis_name = axis_move.split('_')[0]
             move_value = move_dict[axis_move]        
         
@@ -845,6 +871,21 @@ class mesoSPIM_PI_NtoN_piezo(mesoSPIM_Stage):
     def move_absolute(self, move_dict, wait_until_done=False):
         ''' PI move absolute method '''
         for axis_move in move_dict.keys():
+            if axis_move == 'f_abs':
+                f_abs = move_dict['f_abs']
+                f_abs = f_abs - self.int_f_pos_offset
+
+
+                if self.f_min < f_abs and self.f_max > f_abs:
+                    with nidaqmx.Task() as task:
+                        task.ao_channels.add_ao_voltage_chan(self.pi['ao_channel'])
+                        task.write([f_abs/100], auto_start=True)
+
+                    self.f_pos = f_abs
+                else:
+                    self.sig_status_message.emit('Absolute movement stopped: F Motion limit would be reached!')
+
+
             axis_name = axis_move.split('_')[0]
             move_value = move_dict[axis_move] 
             move_value = move_value - getattr(self, ('int_' + axis_name + '_pos_offset'))
