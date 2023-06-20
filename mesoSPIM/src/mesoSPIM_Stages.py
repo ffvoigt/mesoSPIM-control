@@ -1977,7 +1977,7 @@ class mesoSPIM_ASI_MS2000_Stage(mesoSPIM_Stage):
         '''
         ASI-specific code
         '''
-        from devices.stages.asi.asicontrol import StageControlASITiger
+        from .devices.stages.asi.asicontrol import StageControlASITiger
         
         ''' Setting up the ASI stages '''
         self.asi_parameters = self.cfg.asi_parameters
