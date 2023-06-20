@@ -31,3 +31,5 @@ mesoSPIM/test/fixtures/
 *.lnk
 !mesoSPIM/mesoSpim.bat
 !mesoSPIM/mesoSpim-shortcut.lnk
+
+PyVCAM-master/
