@@ -2011,8 +2011,8 @@ class mesoSPIM_ASI_MS2000_Stage(mesoSPIM_Stage):
     def report_position(self):
         position_dict = self.asi_stages.read_position()
         if position_dict is not None:
-            self.y_pos = position_dict[self.mesoSPIM2ASIdict['y']]
-            self.z_pos = position_dict[self.mesoSPIM2ASIdict['z']]
+            self.z_pos = position_dict[self.mesoSPIM2ASIdict['y']]
+            self.y_pos = position_dict[self.mesoSPIM2ASIdict['z']]
             self.f_pos = position_dict[self.mesoSPIM2ASIdict['f']]
             
             self.create_position_dict()
