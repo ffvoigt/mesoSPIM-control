@@ -138,17 +138,14 @@ class PI_TurretZoom(QtCore.QObject):
         except:
             pass
 
-
-        # response = self._send_command(b'RRDSTU\r')
-        # if True:
-        #     msg = f"Error in Mitutoyo revolver initialization, response: {response} \nIf response is empty, check if the revolver is connected."
-        #     logger.error(msg)
-        #     print(msg)
-        # else:
-
     def set_zoom(self, zoom, wait_until_done=False):
         if zoom in self.zoomdict:
-            if zoom == self.parent.state['zoom']:
+            # Read current rotation stage position
+            target_rotation = self.zoomdict[zoom]
+            current_rotation = self.pidevice.qPOS(1)[1]
+            print(f"Target: {target_rotation} Current: {current_rotation}")
+            if current_rotation < target_rotation+0.1 and current_rotation > target_rotation-0.1:
+                # Do not move the focus stage when you are already at the correct zoom
                 msg = f"Zoom already set to correct value ({zoom} equivalent to {self.zoomdict[zoom]} degree rotation)."
                 logger.info(msg)
                 print(msg)
