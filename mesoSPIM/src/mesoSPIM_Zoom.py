@@ -148,21 +148,26 @@ class PI_TurretZoom(QtCore.QObject):
 
     def set_zoom(self, zoom, wait_until_done=False):
         if zoom in self.zoomdict:
-            # Record current focus position
-            self.current_focus = self.parent.state['position']['f_pos']
-            self.pi_parameters['safe_rotation_focus']
-            # Go to save position to rotate the turret and wait until done
-            self.parent.move_absolute({'f_pos':self.pi_parameters['safe_rotation_focus']}, wait_until_done = True)
+            if zoom == self.parent.state['zoom']:
+                msg = f"Zoom already set to correct value ({zoom} equivalent to {self.zoomdict[zoom]} degree rotation)."
+                logger.info(msg)
+                print(msg)
+            else:
+                # Record current focus position
+                self.current_focus = self.parent.state['position']['f_pos']
+                self.pi_parameters['safe_rotation_focus']
+                # Go to save position to rotate the turret and wait until done
+                self.parent.move_absolute({'f_pos':self.pi_parameters['safe_rotation_focus']}, wait_until_done = True)
 
-            # Rotate turret to target position and wait until done 
-            self.pidevice.MOV({1: self.zoomdict[zoom]})
-            self.pitools.waitontarget(self.pidevice)
-            
-            # Move back to saved focus position and wait until done
-            self.parent.move_absolute({'f_pos': self.current_focus}, wait_until_done = True)
+                # Rotate turret to target position and wait until done 
+                self.pidevice.MOV({1: self.zoomdict[zoom]})
+                self.pitools.waitontarget(self.pidevice)
+                
+                # Move back to saved focus position and wait until done
+                self.parent.move_absolute({'f_pos': self.current_focus}, wait_until_done = True)
 
-            msg = f"Zoom set to {zoom} equivalent to {self.zoomdict[zoom]} degree rotation."
-            # logger.error(msg)
-            print(msg)
+                msg = f"Zoom set to {zoom} equivalent to {self.zoomdict[zoom]} degree rotation."
+                logger.info(msg)
+                print(msg)
         else:
             return ValueError(f"Zoom {zoom} not in 'zoomdict', check your config file")
