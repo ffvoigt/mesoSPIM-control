@@ -528,9 +528,6 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         elif axis == 'f':
             self.focusPlusButton.setEnabled(state)
             self.focusMinusButton.setEnabled(state)
-        elif axis == 'c':
-            self.cuvettePlusButton.setEnabled(state)
-            self.cuvetteMinusButton.setEnabled(state)
         elif axis == 'theta':
             self.rotPlusButton.setEnabled(state)
             self.rotMinusButton.setEnabled(state)
