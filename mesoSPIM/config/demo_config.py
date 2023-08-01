@@ -16,6 +16,7 @@ ui_options = {'dark_mode' : True, # Dark mode: Renders the UI dark if enabled
               'enable_y_buttons' : True,
               'enable_z_buttons' : True,
               'enable_f_buttons' : True,
+              'enable_c_buttons' : True,
               'enable_rotation_buttons' : True,
               'enable_loading_buttons' : True,
               'button_sleep_ms_xyzft' : (250, 0, 250, 0, 0), # step-motion buttons disabled for N ms after click. Prevents stage overshooting outside of safe limits, for slow stages.

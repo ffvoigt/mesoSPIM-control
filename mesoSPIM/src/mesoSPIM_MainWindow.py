@@ -308,10 +308,12 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             if key == 'position':
                 self.x_position, self.y_position, self.z_position = pos_dict['x_pos'], pos_dict['y_pos'], pos_dict['z_pos']
                 self.f_position, self.theta_position = pos_dict['f_pos'], pos_dict['theta_pos']
+                self.c_position = pos_dict['c_pos']
                 self.X_Position_Indicator.setText(self.pos2str(self.x_position)+' µm')
                 self.Y_Position_Indicator.setText(self.pos2str(self.y_position)+' µm')
                 self.Z_Position_Indicator.setText(self.pos2str(self.z_position)+' µm')
                 self.Focus_Position_Indicator.setText(self.pos2str(self.f_position)+' µm')
+                self.Cuvette_Position_Indicator.setText(self.pos2str(self.c_position)+' µm')
                 self.Rotation_Position_Indicator.setText(self.pos2str(self.theta_position)+'°')
                 self.state['position'] = dict['position']
 
@@ -378,6 +380,8 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.zMinusButton.pressed.connect(lambda: self.move_relative({'z_rel': -self.xyzIncrementSpinbox.value()}))
         self.focusPlusButton.pressed.connect(lambda: self.move_relative({'f_rel': self.focusIncrementSpinbox.value()}))
         self.focusMinusButton.pressed.connect(lambda: self.move_relative({'f_rel': -self.focusIncrementSpinbox.value()}))
+        self.cuvettePlusButton.pressed.connect(lambda: self.move_relative({'c_rel': -self.cuvetteIncrementSpinbox.value()}))
+        self.cuvetteMinusButton.pressed.connect(lambda: self.move_relative({'c_rel': self.cuvetteIncrementSpinbox.value()}))
         self.rotPlusButton.pressed.connect(lambda: self.move_relative({'theta_rel': self.rotIncrementSpinbox.value()}))
         self.rotMinusButton.pressed.connect(lambda: self.move_relative({'theta_rel': -self.rotIncrementSpinbox.value()}))
 
@@ -386,6 +390,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.xyZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['x','y']) if bool is True else self.sig_unzero_axes.emit(['x','y']))
         self.zZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['z']) if bool is True else self.sig_unzero_axes.emit(['z']))
         self.focusZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['f']) if bool is True else self.sig_unzero_axes.emit(['f']))
+        self.cuvetteZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['c']) if bool is True else self.sig_unzero_axes.emit(['c']))
         self.focusAutoButton.clicked.connect(lambda: self.sig_launch_optimizer.emit({'mode': 'focus', 'amplitude': 300}))
         self.rotZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['theta']) if bool is True else self.sig_unzero_axes.emit(['theta']))
         self.xyzLoadButton.clicked.connect(self.sig_load_sample.emit)
@@ -411,6 +416,10 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             if self.cfg.ui_options['enable_f_buttons'] is False:
                 self.enable_move_buttons('f', False)
                 self.focusZeroButton.setEnabled(False)
+
+            if self.cfg.ui_options['enable_c_buttons'] is False:
+                self.enable_move_buttons('c', False)
+                self.cuvetteZeroButton.setEnabled(False)
 
             if self.cfg.ui_options['enable_rotation_buttons'] is False:
                 self.enable_move_buttons('theta', False)
@@ -519,6 +528,9 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         elif axis == 'f':
             self.focusPlusButton.setEnabled(state)
             self.focusMinusButton.setEnabled(state)
+        elif axis == 'c':
+            self.cuvettePlusButton.setEnabled(state)
+            self.cuvetteMinusButton.setEnabled(state)
         elif axis == 'theta':
             self.rotPlusButton.setEnabled(state)
             self.rotMinusButton.setEnabled(state)
@@ -532,7 +544,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.sig_move_relative.emit(pos_dict)
         if hasattr(self.cfg, 'ui_options') and ('button_sleep_ms_xyzft' in self.cfg.ui_options.keys()):
             axis = key[:-4]
-            index = ['x', 'y', 'z', 'f', 'theta'].index(axis)
+            index = ['x', 'y', 'z', 'f', 'c','theta'].index(axis)
             sleep_ms = self.cfg.ui_options['button_sleep_ms_xyzft'][index]
             if sleep_ms > 0:
                 self.enable_move_buttons(axis, False)
