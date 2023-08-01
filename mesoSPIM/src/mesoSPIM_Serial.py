@@ -199,6 +199,9 @@ class mesoSPIM_Serial(QtCore.QObject):
         self.state['zoom'] = zoom
         self.state['pixelsize'] = self.cfg.pixelsize[zoom]
         self.zoom.set_zoom(zoom, wait_until_done=wait_until_done)
-
+        if self.cfg.cuvette_control:
+            new_cuvette_pos = self.cfg.zoom_cuvette_dict[zoom]
+            logger.info('Setting cuvette position to: ', new_cuvette_pos)
+    
     def execute_stage_program(self):
         self.stage.execute_program()

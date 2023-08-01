@@ -283,7 +283,7 @@ For the 'Demo', 'servo_id', 'COMport' and 'baudrate' do not matter.
 For a 'Dynamixel' servo-driven zoom, 'servo_id', 'COMport' and 'baudrate' (default 1000000) must be specified
 For 'Mitu' (Mitutoyo revolver), 'COMport' and 'baudrate' (default 9600) must be specified
 '''
-zoom_parameters = {'zoom_type' : 'Demo', # 'Demo', 'Dynamixel', or 'Mitu'
+zoom_parameters = {'zoom_type' : 'Demo', # 'Demo', 'Dynamixel', or 'Mitu', or 
                    'COMport' : 'COM1',
                    'baudrate' : 9600,
                    'servo_id': 4, # only for 'Dynamixel'
@@ -319,6 +319,28 @@ zoomdict = {'2x': 'A',
             '20x': 'E',
             }
 '''
+
+'''
+Cuvette control implies that there is a stage axis that moves the cuvette 
+along the detection axis. This is intended for detection systems that require 
+a certain pathlength inside the immersion medium to minimize spherical aberration.
+Currently, this works only in demo mode or in 
+combination with the PI_1controllerNstagesWithCuvette stage 
+'''
+cuvette_control = True
+zoom_cuvette_dict = {   '0.63x' : 3423,
+                        '0.8x' : 3071,
+                        '1x' : 2707,
+                        '1.25x' : 2389,
+                        '1.6x' : 2047,
+                        '2x' : 1706,
+                        '2.5x' : 1354,
+                        '3.2x' : 967,
+                        '4x' : 637,
+                        '5x' : 318,
+                        '6.3x' : 0
+                    }
+
 '''
 Pixelsize in micron
 '''
