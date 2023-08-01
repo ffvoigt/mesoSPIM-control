@@ -89,3 +89,82 @@ class MitutoyoZoom(QtCore.QObject):
                 print(msg)
         else:
             return ValueError(f"Zoom {zoom} not in 'zoomdict', check your config file")
+        
+class PI_TurretZoom(QtCore.QObject):
+    def __init__(self, parent, zoomdict, pi_parameters):
+        super().__init__()
+        self.parent = parent
+        self.zoomdict = zoomdict
+        self.pi_parameters = pi_parameters
+        try:
+            self._initialize()
+        except Exception as error:
+            msg = f"Serial connection to PI Turret controller, error: {error}"
+            logger.error(msg)
+            print(msg)
+
+    def _initialize(self):
+        from pipython import GCSDevice, pitools
+        self.pitools = pitools
+
+        self.controllername = self.pi_parameters['controllername']
+        self.pi_stages = (self.pi_parameters['stages'])
+        self.refmode = self.pi_parameters['refmode']
+        self.serialnum = self.pi_parameters['serialnum']
+        self.pidevice = GCSDevice(self.controllername)
+        self.pidevice.ConnectUSB(serialnum=self.serialnum)
+
+        pitools.startup(self.pidevice, stages=self.pi_stages)
+
+        ''' Report reference status of all stages '''
+        for ii in range(1, len(self.pi_stages) + 1):
+            tStage = self.pi_stages[ii - 1]
+            if tStage == 'NOSTAGE':
+                continue
+
+            tState = self.pidevice.qFRF(ii)
+            if tState[ii]:
+                msg = 'referenced'
+            else:
+                msg = '*UNREFERENCED*'
+
+            logger.info("Turret axis: %d (%s) reference status: %s" % (ii, tStage, msg))
+        logger.info("PI turret initialized")
+        print("PI turret initialized")
+
+    def __del__(self):
+        try:
+            self.pidevice.unload()
+        except:
+            pass
+
+    def set_zoom(self, zoom, wait_until_done=False):
+        if zoom in self.zoomdict:
+            # Read current rotation stage position
+            target_rotation = self.zoomdict[zoom]
+            current_rotation = self.pidevice.qPOS(1)[1]
+            print(f"Target: {target_rotation} Current: {current_rotation}")
+            if current_rotation < target_rotation+0.1 and current_rotation > target_rotation-0.1:
+                # Do not move the focus stage when you are already at the correct zoom
+                msg = f"Zoom already set to correct value ({zoom} equivalent to {self.zoomdict[zoom]} degree rotation)."
+                logger.info(msg)
+                print(msg)
+            else:
+                # Record current focus position
+                self.current_focus = self.parent.state['position']['f_pos']
+                self.pi_parameters['safe_rotation_focus']
+                # Go to save position to rotate the turret and wait until done
+                self.parent.move_absolute({'f_pos':self.pi_parameters['safe_rotation_focus']}, wait_until_done = True)
+
+                # Rotate turret to target position and wait until done 
+                self.pidevice.MOV({1: self.zoomdict[zoom]})
+                self.pitools.waitontarget(self.pidevice)
+                
+                # Move back to saved focus position and wait until done
+                self.parent.move_absolute({'f_pos': self.current_focus}, wait_until_done = True)
+
+                msg = f"Zoom set to {zoom} equivalent to {self.zoomdict[zoom]} degree rotation."
+                logger.info(msg)
+                print(msg)
+        else:
+            return ValueError(f"Zoom {zoom} not in 'zoomdict', check your config file")
