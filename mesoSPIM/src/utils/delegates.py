@@ -309,6 +309,16 @@ class MarkFocusPositionDelegate(MarkPositionDelegate):
         model.setData(index, pos)
         editor.lineEdit.setText(str(pos))
 
+class MarkCuvettePositionDelegate(MarkPositionDelegate):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+    def set_model_data_from_button(self, editor, model, index):
+        pos = model.state['position']['c_pos']
+        pos = round(pos, 2)
+        model.setData(index, pos)
+        editor.lineEdit.setText(str(pos))
+
 class MarkRotationPositionDelegate(MarkPositionDelegate):
     def __init__(self, parent):
         super().__init__(parent)

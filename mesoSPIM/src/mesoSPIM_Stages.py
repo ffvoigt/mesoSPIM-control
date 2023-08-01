@@ -63,6 +63,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.y_pos = 0
         self.z_pos = 0
         self.f_pos = 0
+        self.c_pos = 0
         self.theta_pos = 0
 
         '''Internal (software) positions'''
@@ -70,6 +71,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.int_y_pos = 0
         self.int_z_pos = 0
         self.int_f_pos = 0
+        self.int_c_pos = 0
         self.int_theta_pos = 0
 
         '''Create offsets
@@ -89,6 +91,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.int_y_pos_offset = 0
         self.int_z_pos_offset = 0
         self.int_f_pos_offset = 0
+        self.int_c_pos_offset = 0
         self.int_theta_pos_offset = 0
 
         '''
@@ -117,6 +120,7 @@ class mesoSPIM_Stage(QtCore.QObject):
                               'y_pos': self.y_pos,
                               'z_pos': self.z_pos,
                               'f_pos': self.f_pos,
+                              'c_pos': self.c_pos,
                               'theta_pos': self.theta_pos,
                               }
 
@@ -125,6 +129,7 @@ class mesoSPIM_Stage(QtCore.QObject):
                                   'y_pos': self.int_y_pos,
                                   'z_pos': self.int_z_pos,
                                   'f_pos': self.int_f_pos,
+                                  'c_pos': self.int_c_pos,
                                   'theta_pos': self.int_theta_pos,
                                   }
 
@@ -135,6 +140,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.int_y_pos = self.y_pos + self.int_y_pos_offset
         self.int_z_pos = self.z_pos + self.int_z_pos_offset
         self.int_f_pos = self.f_pos + self.int_f_pos_offset
+        self.int_c_pos = self.c_pos + self.int_c_pos_offset
         self.int_theta_pos = self.theta_pos + self.int_theta_pos_offset
 
         self.create_internal_position_dict()
@@ -160,6 +166,9 @@ class mesoSPIM_Stage(QtCore.QObject):
         if 'f_rel' in sdict:
             self.f_pos = self.f_pos + sdict['f_rel']
 
+        if 'c_rel' in sdict:
+            self.c_pos = self.c_pos + sdict['c_rel']
+
         if wait_until_done is True:
             time.sleep(0.1)
 
@@ -180,6 +189,10 @@ class mesoSPIM_Stage(QtCore.QObject):
         if 'f_abs' in dict:
             f_abs = dict['f_abs'] - self.int_f_pos_offset
             self.f_pos = f_abs
+
+        if 'c_abs' in dict:
+            c_abs = dict['c_abs'] - self.int_c_pos_offset
+            self.c_pos = c_abs
 
         if 'theta_abs' in dict:
             theta_abs = dict['theta_abs'] - self.int_theta_pos_offset

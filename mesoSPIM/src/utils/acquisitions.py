@@ -21,6 +21,7 @@ class Acquisition(indexed.IndexedOrderedDict):
         z_step (float): Z stepsize in microns ,
         theta_pos (float): Rotation angle in microns
         f_pos (float): Focus position in microns
+        c_pos (float): Cuvette position in microns
         laser (str): Laser designation
         intensity (int): Laser intensity in 0-100
         filter (str): Filter designation (has to be in the config)
@@ -50,6 +51,7 @@ class Acquisition(indexed.IndexedOrderedDict):
                  theta_pos=0,
                  f_start=0,
                  f_end=0,
+                 c_pos=0,
                  laser='488 nm',
                  intensity=0,
                  filter='Empty',
@@ -74,6 +76,7 @@ class Acquisition(indexed.IndexedOrderedDict):
         self['rot']=theta_pos
         self['f_start']=f_start
         self['f_end']=f_end
+        self['c_pos']=c_pos
         self['laser']=laser
         self['intensity']=intensity
         self['filter']=filter
@@ -168,6 +171,7 @@ class Acquisition(indexed.IndexedOrderedDict):
                 'z_abs': self['z_start'],
                 'theta_abs': self['rot'],
                 'f_abs': self['f_start'],
+                'c_abs': self['c_pos'],
                 }
 
     def get_endpoint(self):
@@ -176,6 +180,7 @@ class Acquisition(indexed.IndexedOrderedDict):
                 'z_abs': self['z_end'],
                 'theta_abs': self['rot'],
                 'f_abs': self['f_end'],
+                'c_abs': self['c_pos'],
                 }
 
     def get_focus_stepsize_generator(self):
