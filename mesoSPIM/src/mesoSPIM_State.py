@@ -100,6 +100,7 @@ class mesoSPIM_StateSingleton():
                             'remaining_acq_list_time':1,
                             'package_directory': '',
                             'galvo_amp_scale_w_zoom': False,
+                            'extra_info': {},
                             }
 
         def __len__(self):
