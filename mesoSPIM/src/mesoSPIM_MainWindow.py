@@ -18,6 +18,7 @@ from .mesoSPIM_Optimizer import mesoSPIM_Optimizer
 from .WebcamWindow import WebcamWindow
 from .mesoSPIM_ContrastWindow import mesoSPIM_ContrastWindow
 from .mesoSPIM_ScriptWindow import mesoSPIM_ScriptWindow # do not delete this line, it is actually used in exec()
+from .mesoSPIM_CuvetteWindow import mesoSPIM_CuvetteWindow
 
 from .mesoSPIM_State import mesoSPIM_StateSingleton
 from .mesoSPIM_Core import mesoSPIM_Core
@@ -89,6 +90,10 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.state.sig_updated.connect(self.update_gui_from_state)
         self.state['package_directory'] = package_directory
 
+        # To allow updating of the cuvette position when changing the zoom, the last cuvette position needs to be remembered
+        self.state['extra_info']['cuvette_control'] = self.cfg.cuvette_control
+        self.state['extra_info']['zoom_cuvette_dict'] = self.cfg.zoom_cuvette_dict
+
         # Setting up the user interface windows
         loadUi(self.package_directory + '/gui/mesoSPIM_MainWindow.ui', self)
         self.setWindowTitle(title)
@@ -104,6 +109,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.acquisition_manager_window.show()
 
         self.webcam_window = None
+        self.cuvette_window = None
 
         self.check_config_file()
 
@@ -212,8 +218,14 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             else:
                 self.webcam_window = WebcamWindow(0)
                 self.webcam_window.show()
-        else: # open previously close window
-            self.webcam_window.show()
+    
+    def open_cuvette_window(self):
+        if self.cuvette_window is None: 
+            if self.cfg.cuvette_control:
+                self.cuvette_window = mesoSPIM_CuvetteWindow(self)
+            else:
+                self.cuvette_window.show()
+        
 
     def __del__(self):
         """Cleans the threads up after deletion, waits until the threads
@@ -234,6 +246,10 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             self.optimizer.close()
         try:
             self.webcam_window.close()
+        except:
+            pass
+        try:
+            self.cuvette_window.close()
         except:
             pass
         if self.contrast_window:
@@ -308,12 +324,16 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             if key == 'position':
                 self.x_position, self.y_position, self.z_position = pos_dict['x_pos'], pos_dict['y_pos'], pos_dict['z_pos']
                 self.f_position, self.theta_position = pos_dict['f_pos'], pos_dict['theta_pos']
+                self.c_position = pos_dict['c_pos']
                 self.X_Position_Indicator.setText(self.pos2str(self.x_position)+' µm')
                 self.Y_Position_Indicator.setText(self.pos2str(self.y_position)+' µm')
                 self.Z_Position_Indicator.setText(self.pos2str(self.z_position)+' µm')
                 self.Focus_Position_Indicator.setText(self.pos2str(self.f_position)+' µm')
                 self.Rotation_Position_Indicator.setText(self.pos2str(self.theta_position)+'°')
                 self.state['position'] = dict['position']
+
+                if self.cuvette_window:
+                    self.cuvette_window.update_position_indicators(dict)
 
     @QtCore.pyqtSlot(dict)
     def update_progressbars(self,dict):
@@ -364,6 +384,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.actionOpen_Webcam_Window.triggered.connect(self.open_webcam_window)
         self.actionOpen_Acquisition_Manager.triggered.connect(self.acquisition_manager_window.show)
         self.actionCascade_windows.triggered.connect(self.cascade_all_windows)
+        self.actionOpen_Cuvette_Window.triggered.connect(self.open_cuvette_window)
 
     def initialize_and_connect_widgets(self):
         """ Connecting the menu actions """
@@ -532,7 +553,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.sig_move_relative.emit(pos_dict)
         if hasattr(self.cfg, 'ui_options') and ('button_sleep_ms_xyzft' in self.cfg.ui_options.keys()):
             axis = key[:-4]
-            index = ['x', 'y', 'z', 'f', 'theta'].index(axis)
+            index = ['x', 'y', 'z', 'f', 'c','theta'].index(axis)
             sleep_ms = self.cfg.ui_options['button_sleep_ms_xyzft'][index]
             if sleep_ms > 0:
                 self.enable_move_buttons(axis, False)

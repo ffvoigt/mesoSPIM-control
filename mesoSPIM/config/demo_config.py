@@ -16,6 +16,7 @@ ui_options = {'dark_mode' : True, # Dark mode: Renders the UI dark if enabled
               'enable_y_buttons' : True,
               'enable_z_buttons' : True,
               'enable_f_buttons' : True,
+              'enable_c_buttons' : True,
               'enable_rotation_buttons' : True,
               'enable_loading_buttons' : True,
               'button_sleep_ms_xyzft' : (250, 0, 250, 0, 0), # step-motion buttons disabled for N ms after click. Prevents stage overshooting outside of safe limits, for slow stages.
@@ -282,7 +283,7 @@ For the 'Demo', 'servo_id', 'COMport' and 'baudrate' do not matter.
 For a 'Dynamixel' servo-driven zoom, 'servo_id', 'COMport' and 'baudrate' (default 1000000) must be specified
 For 'Mitu' (Mitutoyo revolver), 'COMport' and 'baudrate' (default 9600) must be specified
 '''
-zoom_parameters = {'zoom_type' : 'Demo', # 'Demo', 'Dynamixel', or 'Mitu'
+zoom_parameters = {'zoom_type' : 'Demo', # 'Demo', 'Dynamixel', or 'Mitu', or 
                    'COMport' : 'COM1',
                    'baudrate' : 9600,
                    'servo_id': 4, # only for 'Dynamixel'
@@ -318,6 +319,40 @@ zoomdict = {'2x': 'A',
             '20x': 'E',
             }
 '''
+
+'''
+For a PI turret zoom:
+
+pi_zoom_parameters = {'axes_names': ('phi'),
+                'stages': ('6447-5-00054-NOLIM'),
+                'controllername': ('C-863'),
+                'serialnum': ('0145500418'),
+                'refmode': None,
+                'safe_rotation_focus': 5000, # Position of the focus axis in absolute coordinates where rotation is safe
+                }
+'''
+
+'''
+Cuvette control implies that there is a stage axis that moves the cuvette 
+along the detection axis. This is intended for detection systems that require 
+a certain pathlength inside the immersion medium to minimize spherical aberration.
+Currently, this works only in demo mode or in 
+combination with the PI_1controllerNstagesWithCuvette stage 
+'''
+cuvette_control = True
+zoom_cuvette_dict = {   '0.63x' : 3423,
+                        '0.8x' : 3071,
+                        '1x' : 2707,
+                        '1.25x' : 2389,
+                        '1.6x' : 2047,
+                        '2x' : 1706,
+                        '2.5x' : 1354,
+                        '3.2x' : 967,
+                        '4x' : 637,
+                        '5x' : 318,
+                        '6.3x' : 0
+                    }
+
 '''
 Pixelsize in micron
 '''
@@ -344,6 +379,9 @@ hdf5 = {'subsamp': ((1, 1, 1),), #((1, 1, 1),) no subsamp, ((1, 1, 1), (1, 4, 4)
         'transpose_xy': False, # in case X and Y axes need to be swapped for the correct tile positions
         }
 
+buffering = {'use_ram_buffer': True, # If True, the data is buffered in RAM before writing to disk. If False, data is written to disk immediately after each frame
+             'percent_ram_free': 20, # If use_ram_buffer is True and once the free RAM is below this value, the data is written to disk.
+             }
 '''
 Rescale the galvo amplitude when zoom is changed
 For example, if 'galvo_l_amplitude' = 1 V at zoom '1x', it will ve 2 V at zoom '0.5x'
@@ -407,11 +445,11 @@ startup = {
 'camera_delay_%' : 10,
 'camera_pulse_%' : 1,
 'camera_exposure_time':0.02,
-'camera_line_interval':0.000075,
+'camera_line_interval':0.000075, # Hamamatsu-specific parameter
 'camera_display_live_subsampling': 2,
 #'camera_display_snap_subsampling': 1, #deprecated
 'camera_display_acquisition_subsampling': 2,
 'camera_binning':'1x1',
-'camera_sensor_mode':'ASLM',
+'camera_sensor_mode':'ASLM', # Hamamatsu-specific parameter
 'average_frame_rate': 2.5,
 }

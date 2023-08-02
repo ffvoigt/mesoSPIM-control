@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>964</width>
+    <width>940</width>
     <height>1336</height>
    </rect>
   </property>
@@ -57,8 +57,8 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>921</width>
-         <height>1241</height>
+         <width>915</width>
+         <height>1275</height>
         </rect>
        </property>
        <layout class="QGridLayout" name="gridLayout">
@@ -1479,10 +1479,10 @@ Focus</string>
             </property>
             <property name="geometry">
              <rect>
-              <x>710</x>
-              <y>590</y>
-              <width>121</width>
-              <height>111</height>
+              <x>560</x>
+              <y>570</y>
+              <width>271</width>
+              <height>131</height>
              </rect>
             </property>
             <property name="font">
@@ -3416,8 +3416,8 @@ Focus</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>964</width>
-     <height>37</height>
+     <width>940</width>
+     <height>25</height>
     </rect>
    </property>
    <property name="font">
@@ -3449,6 +3449,7 @@ Focus</string>
     <addaction name="actionOpen_Camera_Window"/>
     <addaction name="actionOpen_Webcam_Window"/>
     <addaction name="actionOpen_Acquisition_Manager"/>
+    <addaction name="actionOpen_Cuvette_Window"/>
     <addaction name="actionCascade_windows"/>
    </widget>
    <addaction name="menuFile"/>
@@ -3520,6 +3521,11 @@ Focus</string>
    </property>
    <property name="toolTip">
     <string>Open Webcam Window, if configured</string>
+   </property>
+  </action>
+  <action name="actionOpen_Cuvette_Window">
+   <property name="text">
+    <string>Open Cuvette Window</string>
    </property>
   </action>
  </widget>

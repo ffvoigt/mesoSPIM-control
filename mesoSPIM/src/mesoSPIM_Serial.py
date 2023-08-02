@@ -13,7 +13,7 @@ from .mesoSPIM_State import mesoSPIM_StateSingleton
 from .devices.filter_wheels.mesoSPIM_FilterWheel import mesoSPIM_DemoFilterWheel, DynamixelFilterWheel, LudlFilterWheel
 from .devices.filter_wheels.mesoSPIM_FilterWheel import ZwoFilterWheel, SutterLambda10BFilterWheel
 from .mesoSPIM_Zoom import DynamixelZoom, DemoZoom, MitutoyoZoom, PI_TurretZoom
-from .mesoSPIM_Stages import mesoSPIM_PI_1toN, mesoSPIM_PI_NtoN, mesoSPIM_ASI_Tiger_Stage, mesoSPIM_ASI_MS2000_Stage, mesoSPIM_DemoStage, mesoSPIM_GalilStages, mesoSPIM_PI_f_rot_and_Galil_xyz_Stages, mesoSPIM_PI_rot_and_Galil_xyzf_Stages, mesoSPIM_PI_rotz_and_Galil_xyf_Stages, mesoSPIM_PI_rotzf_and_Galil_xy_Stages
+from .mesoSPIM_Stages import mesoSPIM_PI_1toN, mesoSPIM_PI_NtoN, mesoSPIM_PI_NtoNwithCuvette, mesoSPIM_ASI_Tiger_Stage, mesoSPIM_ASI_MS2000_Stage, mesoSPIM_DemoStage, mesoSPIM_GalilStages, mesoSPIM_PI_f_rot_and_Galil_xyz_Stages, mesoSPIM_PI_rot_and_Galil_xyzf_Stages, mesoSPIM_PI_rotz_and_Galil_xyf_Stages, mesoSPIM_PI_rotzf_and_Galil_xy_Stages
 
 logger = logging.getLogger(__name__)
 
@@ -65,16 +65,20 @@ class mesoSPIM_Serial(QtCore.QObject):
             self.zoom = DynamixelZoom(self.cfg.zoomdict, self.cfg.zoom_parameters['COMport'], self.cfg.zoom_parameters['servo_id'], self.cfg.zoom_parameters['baudrate'])
         elif self.cfg.zoom_parameters['zoom_type'] in ('Mitu', 'Mitutoyo'):
             self.zoom = MitutoyoZoom(self.cfg.zoomdict, self.cfg.zoom_parameters['COMport'], self.cfg.zoom_parameters['baudrate'])
-        elif self.cfg.zoom_parameters['zoom_type'] == 'Demo':
+        elif self.cfg.zoom_parameters['zoom_type'] in ('Demo', 'DemoZoom'):
             self.zoom = DemoZoom(self.cfg.zoomdict)
         elif self.cfg.zoom_parameters['zoom_type'] == 'PI_Turret':
             self.zoom = PI_TurretZoom(self, self.cfg.zoomdict, self.cfg.pi_zoom_parameters)
+        else:
+            raise ValueError(f"Zoom type unknown: {self.cfg.zoom_parameters['zoom_type']}")
 
         ''' Attaching the stage '''
         if self.cfg.stage_parameters['stage_type'] in {'PI', 'PI_1controllerNstages'}:
             self.stage = mesoSPIM_PI_1toN(self)
         elif self.cfg.stage_parameters['stage_type'] == 'PI_NcontrollersNstages':
             self.stage = mesoSPIM_PI_NtoN(self)
+        elif self.cfg.stage_parameters['stage_type'] == 'PI_NcontrollersNstagesWithCuvette':
+            self.stage = mesoSPIM_PI_NtoNwithCuvette(self)
         elif self.cfg.stage_parameters['stage_type'] == 'GalilStage':
             self.stage = mesoSPIM_GalilStages(self)
         elif self.cfg.stage_parameters['stage_type'] == 'PI_rot_and_Galil_xyzf':
@@ -95,6 +99,8 @@ class mesoSPIM_Serial(QtCore.QObject):
             self.parent.sig_progress.connect(self.stage.log_slice)
         elif self.cfg.stage_parameters['stage_type'] == 'DemoStage':
             self.stage = mesoSPIM_DemoStage(self)
+        else:
+            raise ValueError(f"Stage type unknown: {self.cfg.stage_parameters['stage_type']}")
         try:
             self.stage.sig_status_message.connect(self.send_status_message)
             self.stage.sig_position.connect(self.report_position)
@@ -195,6 +201,10 @@ class mesoSPIM_Serial(QtCore.QObject):
         self.state['zoom'] = zoom
         self.state['pixelsize'] = self.cfg.pixelsize[zoom]
         self.zoom.set_zoom(zoom, wait_until_done=wait_until_done)
-
+        if self.cfg.cuvette_control:
+            new_cuvette_pos = self.state['extra_info']['zoom_cuvette_dict'][zoom]
+            logger.info('Setting cuvette position to: ' + str(new_cuvette_pos))
+            self.move_absolute({'c_abs': new_cuvette_pos}, wait_until_done = True)
+    
     def execute_stage_program(self):
         self.stage.execute_program()
