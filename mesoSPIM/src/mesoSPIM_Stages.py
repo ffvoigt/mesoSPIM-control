@@ -108,9 +108,9 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.z_min = self.cfg.stage_parameters['z_min']
         self.f_max = self.cfg.stage_parameters['f_max']
         self.f_min = self.cfg.stage_parameters['f_min']
-        if self.cfg.stage_parameters['c_min']:
+        if self.cfg.cuvette_control:
             self.c_min = self.cfg.stage_parameters['c_min']
-        if self.cfg.stage_parameters['c_max']:
+        if self.cfg.cuvette_control:
             self.c_max = self.cfg.stage_parameters['c_max']
         self.theta_max = self.cfg.stage_parameters['theta_max']
         self.theta_min = self.cfg.stage_parameters['theta_min']
