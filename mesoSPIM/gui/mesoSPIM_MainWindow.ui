@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1197</width>
+    <width>940</width>
     <height>1336</height>
    </rect>
   </property>
@@ -57,7 +57,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>1172</width>
+         <width>915</width>
          <height>1275</height>
         </rect>
        </property>
@@ -1508,224 +1508,6 @@ Focus</string>
               <height>100</height>
              </size>
             </property>
-           </widget>
-           <widget class="QGroupBox" name="cuvetteGroupBox">
-            <property name="enabled">
-             <bool>true</bool>
-            </property>
-            <property name="geometry">
-             <rect>
-              <x>840</x>
-              <y>10</y>
-              <width>211</width>
-              <height>691</height>
-             </rect>
-            </property>
-            <property name="font">
-             <font>
-              <weight>50</weight>
-              <bold>false</bold>
-             </font>
-            </property>
-            <property name="title">
-             <string>Cuvette</string>
-            </property>
-            <widget class="QPushButton" name="cuvetteMinusButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="geometry">
-              <rect>
-               <x>50</x>
-               <y>70</y>
-               <width>111</width>
-               <height>111</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>up-red.png</normaloff>up-red.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>80</width>
-               <height>80</height>
-              </size>
-             </property>
-             <property name="autoRepeat">
-              <bool>true</bool>
-             </property>
-            </widget>
-            <widget class="QPushButton" name="cuvettePlusButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="geometry">
-              <rect>
-               <x>50</x>
-               <y>310</y>
-               <width>111</width>
-               <height>111</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset>
-               <normaloff>down-red.png</normaloff>down-red.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>80</width>
-               <height>80</height>
-              </size>
-             </property>
-             <property name="autoRepeat">
-              <bool>true</bool>
-             </property>
-            </widget>
-            <widget class="QPushButton" name="cuvetteZeroButton">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="geometry">
-              <rect>
-               <x>50</x>
-               <y>190</y>
-               <width>111</width>
-               <height>111</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>16</pointsize>
-               <weight>50</weight>
-               <italic>false</italic>
-               <bold>false</bold>
-              </font>
-             </property>
-             <property name="text">
-              <string>ZERO
- C</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-            </widget>
-            <widget class="QLabel" name="label_19">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>430</y>
-               <width>141</width>
-               <height>31</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>14</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Increment</string>
-             </property>
-            </widget>
-            <widget class="QSpinBox" name="cuvetteIncrementSpinbox">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>470</y>
-               <width>191</width>
-               <height>41</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>14</pointsize>
-              </font>
-             </property>
-             <property name="suffix">
-              <string> µm</string>
-             </property>
-             <property name="maximum">
-              <number>1000</number>
-             </property>
-             <property name="value">
-              <number>500</number>
-             </property>
-            </widget>
-            <widget class="QLabel" name="label_20">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>540</y>
-               <width>141</width>
-               <height>31</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>14</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>C Position</string>
-             </property>
-            </widget>
-            <widget class="QLineEdit" name="Cuvette_Position_Indicator">
-             <property name="geometry">
-              <rect>
-               <x>10</x>
-               <y>580</y>
-               <width>191</width>
-               <height>41</height>
-              </rect>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>14</pointsize>
-              </font>
-             </property>
-             <property name="accessibleName">
-              <string>X</string>
-             </property>
-             <property name="text">
-              <string>659</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-            </widget>
            </widget>
           </widget>
           <widget class="QWidget" name="ETLTabWidget">
@@ -3634,7 +3416,7 @@ Focus</string>
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1197</width>
+     <width>940</width>
      <height>25</height>
     </rect>
    </property>
@@ -3667,6 +3449,7 @@ Focus</string>
     <addaction name="actionOpen_Camera_Window"/>
     <addaction name="actionOpen_Webcam_Window"/>
     <addaction name="actionOpen_Acquisition_Manager"/>
+    <addaction name="actionOpen_Cuvette_Window"/>
     <addaction name="actionCascade_windows"/>
    </widget>
    <addaction name="menuFile"/>
@@ -3738,6 +3521,11 @@ Focus</string>
    </property>
    <property name="toolTip">
     <string>Open Webcam Window, if configured</string>
+   </property>
+  </action>
+  <action name="actionOpen_Cuvette_Window">
+   <property name="text">
+    <string>Open Cuvette Window</string>
    </property>
   </action>
  </widget>

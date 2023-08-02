@@ -18,6 +18,7 @@ from .mesoSPIM_Optimizer import mesoSPIM_Optimizer
 from .WebcamWindow import WebcamWindow
 from .mesoSPIM_ContrastWindow import mesoSPIM_ContrastWindow
 from .mesoSPIM_ScriptWindow import mesoSPIM_ScriptWindow # do not delete this line, it is actually used in exec()
+from .mesoSPIM_CuvetteWindow import mesoSPIM_CuvetteWindow
 
 from .mesoSPIM_State import mesoSPIM_StateSingleton
 from .mesoSPIM_Core import mesoSPIM_Core
@@ -89,6 +90,10 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.state.sig_updated.connect(self.update_gui_from_state)
         self.state['package_directory'] = package_directory
 
+        # To allow updating of the cuvette position when changing the zoom, the last cuvette position needs to be remembered
+        self.state['extra_info']['cuvette_control'] = self.cfg.cuvette_control
+        self.state['extra_info']['zoom_cuvette_dict'] = self.cfg.zoom_cuvette_dict
+
         # Setting up the user interface windows
         loadUi(self.package_directory + '/gui/mesoSPIM_MainWindow.ui', self)
         self.setWindowTitle(title)
@@ -104,6 +109,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.acquisition_manager_window.show()
 
         self.webcam_window = None
+        self.cuvette_window = None
 
         self.check_config_file()
 
@@ -212,8 +218,14 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             else:
                 self.webcam_window = WebcamWindow(0)
                 self.webcam_window.show()
-        else: # open previously close window
-            self.webcam_window.show()
+    
+    def open_cuvette_window(self):
+        if self.cuvette_window is None: 
+            if self.cfg.cuvette_control:
+                self.cuvette_window = mesoSPIM_CuvetteWindow(self)
+            else:
+                self.cuvette_window.show()
+        
 
     def __del__(self):
         """Cleans the threads up after deletion, waits until the threads
@@ -234,6 +246,10 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             self.optimizer.close()
         try:
             self.webcam_window.close()
+        except:
+            pass
+        try:
+            self.cuvette_window.close()
         except:
             pass
         if self.contrast_window:
@@ -313,9 +329,11 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
                 self.Y_Position_Indicator.setText(self.pos2str(self.y_position)+' µm')
                 self.Z_Position_Indicator.setText(self.pos2str(self.z_position)+' µm')
                 self.Focus_Position_Indicator.setText(self.pos2str(self.f_position)+' µm')
-                self.Cuvette_Position_Indicator.setText(self.pos2str(self.c_position)+' µm')
                 self.Rotation_Position_Indicator.setText(self.pos2str(self.theta_position)+'°')
                 self.state['position'] = dict['position']
+
+                if self.cuvette_window:
+                    self.cuvette_window.update_position_indicators(dict)
 
     @QtCore.pyqtSlot(dict)
     def update_progressbars(self,dict):
@@ -366,6 +384,7 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.actionOpen_Webcam_Window.triggered.connect(self.open_webcam_window)
         self.actionOpen_Acquisition_Manager.triggered.connect(self.acquisition_manager_window.show)
         self.actionCascade_windows.triggered.connect(self.cascade_all_windows)
+        self.actionOpen_Cuvette_Window.triggered.connect(self.open_cuvette_window)
 
     def initialize_and_connect_widgets(self):
         """ Connecting the menu actions """
@@ -380,8 +399,6 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.zMinusButton.pressed.connect(lambda: self.move_relative({'z_rel': -self.xyzIncrementSpinbox.value()}))
         self.focusPlusButton.pressed.connect(lambda: self.move_relative({'f_rel': self.focusIncrementSpinbox.value()}))
         self.focusMinusButton.pressed.connect(lambda: self.move_relative({'f_rel': -self.focusIncrementSpinbox.value()}))
-        self.cuvettePlusButton.pressed.connect(lambda: self.move_relative({'c_rel': -self.cuvetteIncrementSpinbox.value()}))
-        self.cuvetteMinusButton.pressed.connect(lambda: self.move_relative({'c_rel': self.cuvetteIncrementSpinbox.value()}))
         self.rotPlusButton.pressed.connect(lambda: self.move_relative({'theta_rel': self.rotIncrementSpinbox.value()}))
         self.rotMinusButton.pressed.connect(lambda: self.move_relative({'theta_rel': -self.rotIncrementSpinbox.value()}))
 
@@ -390,7 +407,6 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
         self.xyZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['x','y']) if bool is True else self.sig_unzero_axes.emit(['x','y']))
         self.zZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['z']) if bool is True else self.sig_unzero_axes.emit(['z']))
         self.focusZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['f']) if bool is True else self.sig_unzero_axes.emit(['f']))
-        self.cuvetteZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['c']) if bool is True else self.sig_unzero_axes.emit(['c']))
         self.focusAutoButton.clicked.connect(lambda: self.sig_launch_optimizer.emit({'mode': 'focus', 'amplitude': 300}))
         self.rotZeroButton.clicked.connect(lambda bool: self.sig_zero_axes.emit(['theta']) if bool is True else self.sig_unzero_axes.emit(['theta']))
         self.xyzLoadButton.clicked.connect(self.sig_load_sample.emit)
@@ -416,10 +432,6 @@ class mesoSPIM_MainWindow(QtWidgets.QMainWindow):
             if self.cfg.ui_options['enable_f_buttons'] is False:
                 self.enable_move_buttons('f', False)
                 self.focusZeroButton.setEnabled(False)
-
-            if self.cfg.ui_options['enable_c_buttons'] is False:
-                self.enable_move_buttons('c', False)
-                self.cuvetteZeroButton.setEnabled(False)
 
             if self.cfg.ui_options['enable_rotation_buttons'] is False:
                 self.enable_move_buttons('theta', False)
