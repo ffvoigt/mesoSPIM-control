@@ -108,6 +108,10 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.z_min = self.cfg.stage_parameters['z_min']
         self.f_max = self.cfg.stage_parameters['f_max']
         self.f_min = self.cfg.stage_parameters['f_min']
+        if self.cfg.stage_parameters['c_min']:
+            self.c_min = self.cfg.stage_parameters['c_min']
+        if self.cfg.stage_parameters['c_max']:
+            self.c_max = self.cfg.stage_parameters['c_max']
         self.theta_max = self.cfg.stage_parameters['theta_max']
         self.theta_min = self.cfg.stage_parameters['theta_min']
         for deprecated_param in ('x_rot_position', 'y_rot_position', 'z_rot_position'):
@@ -426,6 +430,188 @@ class mesoSPIM_PI_1toN(mesoSPIM_Stage):
 
 
 class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
+    '''
+    Expects following microscope configuration:
+        Sample XYZ movement: Physik Instrumente stage with three L-509-type stepper motor stages and individual C-663 controller.
+        F movement: Physik Instrumente C-663 controller and custom stage with stepper motor
+        Rotation: not implemented
+
+        All stage controller are of same type and the sample stages work with reference setting.
+        Focus stage has reference mode set to off.
+            
+    Note:
+        configs as declared in mesoSPIM_config.py:
+        stage_parameters = {'stage_type' : 'PI_NcontrollersNstages',
+                            ...
+                            }
+        pi_parameters = {'axes_names': ('x', 'y', 'z', 'theta', 'f'),
+                        'stages': ('L-509.20SD00', 'L-509.40SD00', 'L-509.20SD00', None, 'MESOSPIM_FOCUS'),
+                        'controllername': ('C-663', 'C-663', 'C-663', None, 'C-663'),
+                        'serialnum': ('**********', '**********', '**********', None, '**********'),
+                        'refmode': ('FRF', 'FRF', 'FRF', None, 'RON')
+                        }
+        make sure that reference points are not in conflict with general microscope setup
+        and will not hurt optics under referencing at startup
+    '''
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        from pipython import GCSDevice, pitools
+        self.pitools = pitools
+        self.pi = self.cfg.pi_parameters
+        print("Connecting stage drive...")
+
+        # Setting up the stages with separate PI controller.
+        # Explicitly set referencing status and get position
+
+        # gather stage devices in VirtualStages class
+        class VirtualStages:
+            pass
+
+        assert len(self.pi['axes_names']) == len(self.pi['stages']) == len(self.pi['controllername']) \
+               == len(self.pi['serialnum']) == len(self.pi['refmode']), \
+            "Config file, pi_parameters dictionary: numbers of axes_names, stages, controllername, serialnum, refmode must match "
+        self.pi_stages = VirtualStages()
+        for axis_name, stage, controller, serialnum, refmode in zip(self.pi['axes_names'], self.pi['stages'],
+                                                                    self.pi['controllername'], self.pi['serialnum'],
+                                                                    self.pi['refmode']):
+            # run stage startup procedure for each axis
+            if stage:
+                print(f'starting stage {stage}')
+                pidevice_ = GCSDevice(controller)
+                pidevice_.ConnectUSB(serialnum=serialnum)
+                if refmode is None:
+                    pitools.startup(pidevice_, stages=stage)
+                elif refmode == 'FRF':
+                    pitools.startup(pidevice_, stages=stage, refmodes=refmode)
+                    pidevice_.FRF(1)
+                elif refmode == 'RON':
+                    pitools.startup(pidevice_, stages=stage)
+                    pidevice_.RON({1: 0})  # set reference mode
+                    # activate servo
+                    pidevice_.SVO(pidevice_.axes, [True] * len(pidevice_.axes))
+                    # print('servo state: {}'.format(pidevice_.qSVO()))
+                    # set/get actual position as home position
+                    # assumes that starting position is within reasonable distance from optimal focus
+                    pidevice_.POS({1: 0.0})
+                    pidevice_.DFH(1)
+                else:
+                    raise ValueError(f"refmode {refmode} is not supported, PI stage {stage} initialization failed")
+                print(f'stage {stage} started')
+                print('axis {}, referencing mode: {}'.format(axis_name, pidevice_.qRON()))
+                self.wait_for_controller(pidevice_)
+                print('axis {}, stage {} ready'.format(axis_name, stage))
+                setattr(self.pi_stages, ('pidevice_' + axis_name), pidevice_)
+            else:
+                setattr(self.pi_stages, axis_name, None)
+
+        logger.info('mesoSPIM_PI_NtoN: started')
+
+
+    def wait_for_controller(self, controller):
+        # function used during stage setup
+        blockflag = True
+        while blockflag:
+            if controller.IsControllerReady():
+                blockflag = False
+            else:
+                time.sleep(0.1)
+
+
+    def __del__(self):
+        '''Close the PI connection'''
+        try:
+            [(getattr(self.pi_stages, ('pidevice_' + axis_name))).unload() for axis_name in self.pi['axes_names'] if
+             (hasattr(self.pi_stages, ('pidevice_' + axis_name)))]
+        except:
+            pass
+
+
+    def report_position(self):
+        '''report stage position'''
+        for axis_name in self.pi['axes_names']:
+            pidevice_name = 'pidevice_' + str(axis_name)
+            if hasattr(self.pi_stages, pidevice_name):
+                try:
+                    if axis_name is None:
+                        pos = 0
+                    elif axis_name == 'theta':
+                        pos = (getattr(self.pi_stages, pidevice_name)).qPOS(1)[1]
+                    else:
+                        pos = round((getattr(self.pi_stages, pidevice_name)).qPOS(1)[1] * 1000, 2)
+                except:
+                    print(f"Failed to report_position for axis_name {axis_name}, pidevice_name {pidevice_name}.")
+            else:
+                pos = 0
+
+            setattr(self, (axis_name + '_pos'), pos)
+            int_pos = pos + getattr(self, ('int_' + axis_name + '_pos_offset'))
+            setattr(self, ('int_' + axis_name + '_pos'), int_pos)
+
+        self.create_position_dict()
+        self.create_internal_position_dict()
+
+        self.sig_position.emit(self.int_position_dict)
+
+
+    def move_relative(self, move_dict, wait_until_done=False):
+        ''' PI move relative method '''        
+        for axis_move in move_dict.keys():        
+            axis_name = axis_move.split('_')[0]
+            move_value = move_dict[axis_move]        
+        
+            if (hasattr(self.pi_stages, ('pidevice_' + axis_name))):
+                if (getattr(self, (axis_name + '_min')) < getattr(self, (axis_name + '_pos')) + move_value) and \
+                    (getattr(self, (axis_name + '_max')) > getattr(self, (axis_name + '_pos')) + move_value):
+                    if not axis_name=='theta':
+                        move_value = move_value/1000
+                    (getattr(self.pi_stages, ('pidevice_' + axis_name))).MVR({1 : move_value})
+                else:
+                    self.sig_status_message.emit('Relative movement stopped: {} Motion limit would be reached!'.format(axis_name))
+                if (axis_name == 'f') or (wait_until_done == True):
+                    self.pitools.waitontarget(getattr(self.pi_stages, ('pidevice_' + axis_name)))  # focus may be slower than expected
+
+
+    def move_absolute(self, move_dict, wait_until_done=False):
+        ''' PI move absolute method '''
+        for axis_move in move_dict.keys():
+            axis_name = axis_move.split('_')[0]
+            move_value = move_dict[axis_move] 
+            move_value = move_value - getattr(self, ('int_' + axis_name + '_pos_offset'))
+            
+            if (hasattr(self.pi_stages, ('pidevice_' + axis_name))):
+                if (getattr(self, (axis_name + '_min')) < move_value) and \
+                        (getattr(self, (axis_name + '_max')) > move_value):
+                    if not axis_name == 'theta':
+                        move_value = move_value / 1000
+                    (getattr(self.pi_stages, ('pidevice_' + axis_name))).MOV({1: move_value})
+                else:
+                    self.sig_status_message.emit(
+                        'Absolute movement stopped: {} Motion limit would be reached!'.format(axis_name))
+                if (axis_name == 'f') or (wait_until_done == True):
+                    self.pitools.waitontarget(getattr(self.pi_stages, ('pidevice_' + axis_name)))  # focus may be slower than expected
+
+
+    def stop(self):
+        '''stop stage movement'''
+        [(getattr(self.pi_stages, ('pidevice_' + axis_name))).STP(noraise=True) for axis_name in self.pi['axes_names']
+         if (hasattr(self.pi_stages, ('pidevice_' + axis_name)))]
+
+
+    def load_sample(self):
+        '''bring sample to imaging position'''
+        axis_name = 'y'
+        y_abs = self.cfg.stage_parameters['y_load_position'] / 1000
+        (getattr(self.pi_stages, ('pidevice_' + axis_name))).MOV({1: y_abs})
+
+
+    def unload_sample(self):
+        '''lift sample to sample handling position'''
+        axis_name = 'y'
+        y_abs = self.cfg.stage_parameters['y_unload_position'] / 1000
+        (getattr(self.pi_stages, ('pidevice_' + axis_name))).MOV({1: y_abs})
+
+class mesoSPIM_PI_NtoNwithCuvette(mesoSPIM_Stage):
     '''
     Expects following microscope configuration:
         Sample XYZ movement: Physik Instrumente stage with three L-509-type stepper motor stages and individual C-663 controller.
