@@ -128,6 +128,8 @@ class mesoSPIM_Core(QtCore.QObject):
         self.serial_worker.sig_position.connect(self.sig_position.emit)
         self.serial_worker.sig_status_message.connect(self.send_status_message_to_gui)
         self.serial_worker.sig_pause.connect(self.pause)
+        self.serial_worker.sig_state_request.connect(self.state_request_handler)
+        self.serial_worker.sig_update_gui_from_state.connect(self.sig_update_gui_from_state.emit)
         self.sig_polling_stage_position_start.connect(self.serial_worker.stage.pos_timer.start)
         self.sig_polling_stage_position_stop.connect(self.serial_worker.stage.pos_timer.stop)
 

@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class mesoSPIM_Serial(QtCore.QObject):
     '''This class handles mesoSPIM serial connections'''
     sig_finished = QtCore.pyqtSignal()
+    sig_update_gui_from_state = QtCore.pyqtSignal(bool)
     sig_state_request = QtCore.pyqtSignal(dict)
     sig_position = QtCore.pyqtSignal(dict)
     sig_zero_axes = QtCore.pyqtSignal(list)
@@ -200,11 +201,25 @@ class mesoSPIM_Serial(QtCore.QObject):
         this is to avoid laggy update loops with the GUI.'''
         self.state['zoom'] = zoom
         self.state['pixelsize'] = self.cfg.pixelsize[zoom]
+        setup_in_live_mode = False
+        # check that we are not in live mode
+        if self.cfg.zoom_parameters['zoom_type'] == 'PI_Turret':
+            if self.state['state'] == 'live':
+                setup_in_live_mode = True
+                self.sig_state_request.emit({'state':'idle'})
+                self.sig_update_gui_from_state.emit(True)
+
         self.zoom.set_zoom(zoom, wait_until_done=wait_until_done)
+
         if self.cfg.cuvette_control:
             new_cuvette_pos = self.state['extra_info']['zoom_cuvette_dict'][zoom]
             logger.info('Setting cuvette position to: ' + str(new_cuvette_pos))
             self.move_absolute({'c_abs': new_cuvette_pos}, wait_until_done = True)
+
+        if self.cfg.zoom_parameters['zoom_type'] == 'PI_Turret':
+            if setup_in_live_mode:
+                self.sig_state_request.emit({'state':'live'})
+                self.sig_update_gui_from_state.emit(False)
     
     def execute_stage_program(self):
         self.stage.execute_program()
