@@ -321,6 +321,18 @@ zoomdict = {'2x': 'A',
 '''
 
 '''
+For a PI turret zoom:
+
+pi_zoom_parameters = {'axes_names': ('phi'),
+                'stages': ('6447-5-00054-NOLIM'),
+                'controllername': ('C-863'),
+                'serialnum': ('0145500418'),
+                'refmode': None,
+                'safe_rotation_focus': 5000, # Position of the focus axis in absolute coordinates where rotation is safe
+                }
+'''
+
+'''
 Cuvette control implies that there is a stage axis that moves the cuvette 
 along the detection axis. This is intended for detection systems that require 
 a certain pathlength inside the immersion medium to minimize spherical aberration.
