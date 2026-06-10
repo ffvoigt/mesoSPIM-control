@@ -1,5 +1,7 @@
 """
-mesoSPIM Module for controlling ASI-Stages (Tiger and MS-2000)
+mesoSPIM Module for controlling ASI-Stages 
+
+Authors: Fabian Voigt, Nikita Vladimirov
 """
 
 import time

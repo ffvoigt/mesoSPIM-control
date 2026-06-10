@@ -1,5 +1,6 @@
 """
-General-purpose Dynamixel servo class to control e.g. mesoSPIM zoom or filter wheel.
+General-purpose Dynamixel servo class to control e.g. mesoSPIM zoom or filter wheel
+Authors: Fabian Voigt, Nikita Vladimirov
 """
 
 

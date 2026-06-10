@@ -42,7 +42,7 @@ class mesoSPIM_StateSingleton(QObject):
                         'samplerate' : 100000,
                         'sweeptime' : 0.2,
                         'position' : {'x_pos':0,'y_pos':0,'z_pos':0,'f_pos':0,'theta_pos':0}, # relative position, including user-specified offset
-                        'position_absolute' : {'x_pos':0,'y_pos':0,'z_pos':0,'f_pos':0,'theta_pos':0}, 
+                        'position_absolute' : {'x_pos':0,'y_pos':0,'z_pos':0,'f_pos':0,'c_pos':0,'theta_pos':0}, 
                         'ttl_movement_enabled_during_acq' : False,
                         'ETL_cfg_file' : 'config/etl_parameters/ETL-parameters.csv',
                         'filename' : 'file.tif',
@@ -50,8 +50,8 @@ class mesoSPIM_StateSingleton(QObject):
                         'snap_folder' : 'tmp',
                         'file_prefix' : '',
                         'file_suffix' : '000001',
-                        'zoom' : '2x', # TODO: proper zoom initialization. If this zoom is not in config file, ETL parameters do not update at the startup
-                        'pixelsize' : 1.0,
+                        'zoom' : '1.1x', # TODO: proper zoom initialization. If this zoom is not in config file, ETL parameters do not update at the startup
+                        'pixelsize' : 6.5,
                         'laser' : '488 nm',
                         'max_laser_voltage':1,
                         'intensity' : 10,
@@ -98,6 +98,7 @@ class mesoSPIM_StateSingleton(QObject):
                         'package_directory': '',
                         'galvo_amp_scale_w_zoom': False,
                         'moving_to_target': False, # A dirty way to know if moving with wait_untile_done=True is finished from another thread
+                        'extra_info': {},
                         }
 
     def __len__(self):

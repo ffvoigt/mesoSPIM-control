@@ -73,7 +73,7 @@ class mesoSPIM_WaveFormGenerator(QtCore.QObject):
         logger.warning(f"Laser AO task voltage range is +/- {self.state['max_laser_voltage']}V. Check if this is safe for your hardware.")
 
         logger.warning("Galvo and ETL AO task voltage range is set to -5V to 5V. Check if this is safe for your hardware.")
-        self.MAX_GALVO_ETL_VOLT = 5
+        self.MAX_GALVO_ETL_VOLT = 10
 
     def rescale_galvo_amplitude_by_zoom(self, zoom: float):
         if self.state['galvo_amp_scale_w_zoom'] is True:

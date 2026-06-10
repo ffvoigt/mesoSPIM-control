@@ -2815,7 +2815,7 @@ Focus</string>
               <string> V</string>
              </property>
              <property name="maximum">
-              <double>5.000000000000000</double>
+              <double>10.000000000000000</double>
              </property>
              <property name="singleStep">
               <double>0.010000000000000</double>
@@ -3522,6 +3522,7 @@ Focus</string>
     <addaction name="actionOpen_Webcam_Window"/>
     <addaction name="actionOpen_Acquisition_Manager"/>
     <addaction name="actionOpen_Tile_Overview"/>
+    <addaction name="actionOpen_Cuvette_Window"/>
     <addaction name="actionCascade_windows"/>
    </widget>
    <addaction name="menuFile"/>
@@ -3598,6 +3599,11 @@ Focus</string>
   <action name="actionOpen_Tile_Overview">
    <property name="text">
     <string>Open Tile Overview</string>
+   </property>
+  </action>
+  <action name="actionOpen_Cuvette_Window">
+   <property name="text">
+    <string>Open Cuvette Window</string>
    </property>
   </action>
  </widget>

@@ -10,25 +10,20 @@ logger = logging.getLogger(__name__)
 
 
 class mesoSPIM_Stage(QtCore.QObject):
-    '''Abstract base class for all mesoSPIM stage drivers.
+    '''
+    DemoStage for a mesoSPIM microscope
 
-    Concrete subclasses (:class:`mesoSPIM_DemoStage`, :class:`mesoSPIM_PI_1toN`,
-    :class:`mesoSPIM_PI_NtoN`, :class:`mesoSPIM_PI_rotz_and_Galil_xyf_Stages`,
-    :class:`mesoSPIM_ASI_Stages`) implement the hardware-specific communication.
+    It is expected that the parent class has the following signals:
+        sig_move_relative = pyqtSignal(dict)
+        sig_move_relative_and_wait_until_done = pyqtSignal(dict)
+        sig_move_absolute = pyqtSignal(dict)
+        sig_move_absolute_and_wait_until_done = pyqtSignal(dict)
+        sig_zero = pyqtSignal(list)
+        sig_unzero = pyqtSignal(list)
+        sig_stop_movement = pyqtSignal()
 
-    The base class provides:
-
-    * A 100 ms ``QTimer`` that calls :meth:`report_position` to keep the GUI
-      position readouts up to date.
-    * Software ("internal") position tracking with per-axis zeroing offsets so
-      that users can zero any axis without the physical stage moving.
-    * Motion-limit checking using ``cfg.stage_parameters`` (``x_min``, ``x_max``,
-      ``y_min``, ``y_max``, etc., all in micrometres).
-    * Default implementations of :meth:`load_sample`, :meth:`unload_sample`,
-      and :meth:`center_sample` driven by config values.
-
-    This object is owned by :class:`mesoSPIM_Serial` and therefore lives in the
-    **Core thread**.
+    Also contains a QTimer that regularily sends position updates, e.g
+    during the execution of movements.
     '''
 
     sig_position = QtCore.pyqtSignal(dict)
@@ -68,6 +63,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.y_pos = 0
         self.z_pos = 0
         self.f_pos = 2500 # for testing purposes
+        self.c_pos = 0
         self.theta_pos = 0
 
         '''Internal (software) positions'''
@@ -75,6 +71,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.int_y_pos = 0
         self.int_z_pos = 0
         self.int_f_pos = 0
+        self.int_c_pos = 0
         self.int_theta_pos = 0
 
         '''Create offsets
@@ -94,6 +91,7 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.int_y_pos_offset = 0
         self.int_z_pos_offset = 0
         self.int_f_pos_offset = 0
+        self.int_c_pos_offset = 0
         self.int_theta_pos_offset = 0
 
         '''
@@ -110,6 +108,10 @@ class mesoSPIM_Stage(QtCore.QObject):
         self.z_min = self.cfg.stage_parameters['z_min']
         self.f_max = self.cfg.stage_parameters['f_max']
         self.f_min = self.cfg.stage_parameters['f_min']
+        if self.cfg.cuvette_control:
+            self.c_min = self.cfg.stage_parameters['c_min']
+        if self.cfg.cuvette_control:
+            self.c_max = self.cfg.stage_parameters['c_max']
         self.theta_max = self.cfg.stage_parameters['theta_max']
         self.theta_min = self.cfg.stage_parameters['theta_min']
         for deprecated_param in ('x_rot_position', 'y_rot_position', 'z_rot_position'):
@@ -118,38 +120,33 @@ class mesoSPIM_Stage(QtCore.QObject):
                       f"Update your config file to suppress these messages.")
 
     def create_position_dict(self):
-        """Populate ``self.position_dict`` with the current raw (hardware) axis positions
-        and store it in ``state['position_absolute']``."""
         self.position_dict = {'x_pos': self.x_pos,
                               'y_pos': self.y_pos,
                               'z_pos': self.z_pos,
                               'f_pos': self.f_pos,
+                              'c_pos': self.c_pos,
                               'theta_pos': self.theta_pos,
                               }
         self.state['position_absolute'] = self.position_dict
 
     def create_internal_position_dict(self):
-        """Populate ``self.int_position_dict`` with the user-visible (software-zeroed) axis positions."""
         self.int_position_dict = {'x_pos': self.int_x_pos,
                                   'y_pos': self.int_y_pos,
                                   'z_pos': self.int_z_pos,
                                   'f_pos': self.int_f_pos,
+                                  'c_pos': self.int_c_pos,
                                   'theta_pos': self.int_theta_pos,
                                   }
 
     @QtCore.pyqtSlot()
     def report_position(self):
-        """Read current positions, apply zeroing offsets, update state, and emit ``sig_position``.
-
-        Called automatically every 100 ms by the internal ``QTimer`` and also
-        explicitly after blocking moves (``wait_until_done=True``).
-        """
         self.create_position_dict()
 
         self.int_x_pos = self.x_pos + self.int_x_pos_offset
         self.int_y_pos = self.y_pos + self.int_y_pos_offset
         self.int_z_pos = self.z_pos + self.int_z_pos_offset
         self.int_f_pos = self.f_pos + self.int_f_pos_offset
+        self.int_c_pos = self.c_pos + self.int_c_pos_offset
         self.int_theta_pos = self.theta_pos + self.int_theta_pos_offset
 
         self.create_internal_position_dict()
@@ -158,14 +155,6 @@ class mesoSPIM_Stage(QtCore.QObject):
 
     @QtCore.pyqtSlot(dict)
     def move_relative(self, sdict, wait_until_done=False):
-        """Move one or more axes by a relative offset (demo / base-class implementation).
-
-        Args:
-            sdict (dict): Axis → step mapping in micrometres, e.g.
-                ``{'z_rel': -100.0, 'f_rel': 50.0}``.
-            wait_until_done (bool): If ``True``, block for 100 ms and call
-                :meth:`report_position` to simulate a settle delay.
-        """
         if 'x_rel' in sdict:
             self.x_pos = self.x_pos + sdict['x_rel']
             print(f"INFO: x_pos = {self.x_pos}")
@@ -186,6 +175,10 @@ class mesoSPIM_Stage(QtCore.QObject):
             self.f_pos = self.f_pos + sdict['f_rel']
             print(f"INFO: f_pos = {self.f_pos}")
 
+        if 'c_rel' in sdict:
+            self.c_pos = self.c_pos + sdict['c_rel']
+            print(f"INFO: c_pos = {self.c_pos}")
+
         if wait_until_done is True:
             self.state['moving_to_target'] = True
             time.sleep(0.1)
@@ -194,27 +187,19 @@ class mesoSPIM_Stage(QtCore.QObject):
 
     @QtCore.pyqtSlot(dict)
     def move_absolute(self, dict, wait_until_done=False, use_internal_position=True):
-        """Move one or more axes to absolute target positions (demo / base-class implementation).
-
-        Args:
-            dict (dict): Axis → target mapping in micrometres, e.g.
-                ``{'x_abs': 5000.0, 'z_abs': -200.0}``.
-            wait_until_done (bool): If ``True``, block for 1 s and confirm
-                completion via :meth:`report_position`.
-            use_internal_position (bool): When ``True`` the zeroing offsets are
-                subtracted so that the user sees the zeroed coordinate system.
-        """
         if use_internal_position is True:
             x_offset = self.int_x_pos_offset
             y_offset = self.int_y_pos_offset
             z_offset = self.int_z_pos_offset
             f_offset = self.int_f_pos_offset
+            c_offset = self.int_c_pos_offset
             theta_offset = self.int_theta_pos_offset
         else:
             x_offset = 0
             y_offset = 0
             z_offset = 0
             f_offset = 0
+            c_offset = 0
             theta_offset = 0
         if 'x_abs' in dict:
             x_abs = dict['x_abs'] - x_offset
@@ -242,6 +227,11 @@ class mesoSPIM_Stage(QtCore.QObject):
                 self.sig_status_message.emit(msg)
                 logger.debug(msg)
 
+        if 'c_abs' in dict:
+            c_abs = dict['c_abs'] - c_offset
+            self.c_pos = c_abs
+            print(f"INFO: c_pos = {self.c_pos}")
+
         if 'theta_abs' in dict:
             theta_abs = dict['theta_abs'] - theta_offset
             self.theta_pos = theta_abs
@@ -257,12 +247,9 @@ class mesoSPIM_Stage(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def stop(self):
-        """Immediately stop all axis motion and emit a 'Stopped' status message."""
         self.sig_status_message.emit('Stopped')
 
     def zero_axes(self, list):
-        """Set the internal-position offset so that the current physical position reads 0
-        for each axis in *list* (e.g. ``['x', 'z']``)."""
         for axis in list:
             try:
                 exec('self.int_' + axis + '_pos_offset = -self.' + axis + '_pos') # update the position offset
@@ -270,8 +257,6 @@ class mesoSPIM_Stage(QtCore.QObject):
                 logger.info('Zeroing of axis: ', axis, 'failed')
 
     def unzero_axes(self, list):
-        """Clear the internal-position offset for each axis in *list*, restoring
-        the hardware coordinate as the user-visible position."""
         for axis in list:
             try:
                 exec('self.int_' + axis + '_pos_offset = 0') # zero the position offset
@@ -279,20 +264,12 @@ class mesoSPIM_Stage(QtCore.QObject):
                 logger.info('Unzeroing of axis: ', axis, 'failed')
 
     def load_sample(self):
-        """Move the Y axis to ``cfg.stage_parameters['y_load_position']`` (sample exchange position)."""
         self.y_pos = self.cfg.stage_parameters['y_load_position']
 
     def unload_sample(self):
-        """Move the Y axis to ``cfg.stage_parameters['y_unload_position']``."""
         self.y_pos = self.cfg.stage_parameters['y_unload_position']    
         
     def center_sample(self):
-        """Move X (and optionally Z) to the configured center / midpoint position.
-
-        Values are taken from ``cfg.stage_parameters['x_center_position']`` and
-        ``cfg.stage_parameters['z_center_position']``.  If a key is absent the
-        corresponding axis is left at its current position and a message is logged.
-        """
         if 'x_center_position' in self.cfg.stage_parameters.keys():
             self.x_center = self.cfg.stage_parameters['x_center_position']
             self.move_absolute({'x_abs': self.x_center}, wait_until_done=False, use_internal_position=False)
@@ -310,14 +287,6 @@ class mesoSPIM_Stage(QtCore.QObject):
 
 
 class mesoSPIM_DemoStage(mesoSPIM_Stage):
-    '''Software-only stage for use without physical hardware.
-
-    All movement commands are handled by the base-class
-    :class:`mesoSPIM_Stage` implementation, which simply updates the
-    internal position variables and optionally waits a short delay to
-    simulate motion settle time.  No serial or USB connections are opened.
-    Intended for development, demos, and CI/testing.
-    '''
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -730,6 +699,215 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
         y_abs = self.cfg.stage_parameters['y_unload_position'] / 1000
         (getattr(self.pi_stages, ('pidevice_' + axis_name))).MOV({1: y_abs})
 
+
+class mesoSPIM_PI_1toNwithCuvette(mesoSPIM_Stage):
+    '''
+    Configuration with 1 controller connected to N stages, (e.g. C-884, default mesoSPIM V5 setup).
+
+    Note:
+    configs as declared in mesoSPIM_config.py:
+        stage_parameters = {'stage_type' : 'PI_1controllerNstages',
+                            ...
+                            }
+    pi_parameters = {'controllername' : 'C-884',
+                    'stages' : ('L-509.20DG10','L-509.40DG10','L-509.20DG10','M-060.DG','M-406.4PD','NOSTAGE'),
+                    'refmode' : ('FRF',),
+                    'serialnum' : ('118075764'),
+                    }
+    '''
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        from pipython import GCSDevice, pitools
+        self.pitools = pitools
+
+        ''' Setting up the PI stages '''
+        self.pi = self.cfg.pi_parameters
+        self.controllername = self.cfg.pi_parameters['controllername']
+        self.pi_stages = list(self.cfg.pi_parameters['stages'])
+        self.refmode = self.cfg.pi_parameters['refmode']
+        self.serialnum = self.cfg.pi_parameters['serialnum']
+        self.pidevice = GCSDevice(self.controllername)
+        self.pidevice.ConnectUSB(serialnum=self.serialnum)
+
+        ''' PI startup '''
+        ''' with refmode enabled: pretty dangerous
+        pitools.startup(self.pidevice, stages=self.pi_stages, refmode=self.refmode)
+        '''
+        pitools.startup(self.pidevice, stages=self.pi_stages)
+
+        ''' Report reference status of all stages '''
+        for ii in range(1, len(self.pi_stages) + 1):
+            tStage = self.pi_stages[ii - 1]
+            if tStage == 'NOSTAGE':
+                continue
+
+            tState = self.pidevice.qFRF(ii)
+            if tState[ii]:
+                msg = 'referenced'
+            else:
+                msg = '*UNREFERENCED*'
+
+            logger.info("Axis %d (%s) reference status: %s" % (ii, tStage, msg))
+
+        ''' Stage 5 referencing hack '''
+        # self.pidevice.FRF(5)
+        # logger.info('M-406 Emergency referencing hack: Waiting for referencing move')
+        # self.block_till_controller_is_ready()
+        # logger.info('M-406 Emergency referencing hack done')
+
+    def __del__(self):
+        try:
+            self.pidevice.unload()
+        except:
+            pass
+
+    def report_position(self):
+        positions = self.pidevice.qPOS(self.pidevice.axes)
+        self.x_pos = round(positions['1'] * 1000, 2)
+        self.y_pos = round(positions['2'] * 1000, 2)
+        self.z_pos = round(positions['3'] * 1000, 2)
+        self.f_pos = round(positions['5'] * 1000, 2)
+        self.c_pos = round(positions['6'] * 1000, 2)
+        self.theta_pos = positions['4']
+
+        self.create_position_dict()
+
+        self.int_x_pos = self.x_pos + self.int_x_pos_offset
+        self.int_y_pos = self.y_pos + self.int_y_pos_offset
+        self.int_z_pos = self.z_pos + self.int_z_pos_offset
+        self.int_f_pos = self.f_pos + self.int_f_pos_offset
+        self.int_theta_pos = self.theta_pos + self.int_theta_pos_offset
+        self.int_c_pos = self.c_pos + self.int_c_pos_offset
+
+        self.create_internal_position_dict()
+        # self.state['position'] = self.int_position_dict
+        self.sig_position.emit(self.int_position_dict)
+
+    def move_relative(self, sdict, wait_until_done=False):
+        ''' PI move relative method
+
+        Lots of implementation details in here, should be replaced by a facade
+        '''
+        if 'x_rel' in sdict:
+            x_rel = sdict['x_rel'] / 1000
+            self.pidevice.MVR({1: x_rel})
+
+        if 'y_rel' in sdict:
+            y_rel = sdict['y_rel'] / 1000
+            self.pidevice.MVR({2: y_rel})
+
+        if 'z_rel' in sdict:
+            z_rel = sdict['z_rel'] / 1000
+            self.pidevice.MVR({3: z_rel})
+
+        if 'theta_rel' in sdict:
+            theta_rel = sdict['theta_rel']
+            self.pidevice.MVR({4: theta_rel})
+
+        if 'f_rel' in sdict:
+            f_rel = sdict['f_rel'] / 1000
+            self.pidevice.MVR({5: f_rel})
+
+        if 'c_rel' in sdict:
+            c_rel = sdict['c_rel'] / 1000
+            self.pidevice.MVR({6: c_rel})
+
+        if wait_until_done:
+            self.pitools.waitontarget(self.pidevice)
+
+    def move_absolute(self, dict, wait_until_done=False,use_internal_position=True):
+        '''
+        Lots of implementation details in here, should be replaced by a facade
+
+        TODO: Also lots of repeating code.
+        TODO: DRY principle violated
+        '''
+
+        if 'x_abs' in dict:
+            x_abs = dict['x_abs']
+            x_abs = x_abs - self.int_x_pos_offset
+            if self.x_min < x_abs < self.x_max:
+                ''' Conversion to mm and command emission'''
+                x_abs = x_abs / 1000
+                self.pidevice.MOV({1: x_abs})
+            else:
+                self.sig_status_message.emit('Absolute movement stopped: X Motion limit would be reached!')
+
+        if 'y_abs' in dict:
+            y_abs = dict['y_abs']
+            y_abs = y_abs - self.int_y_pos_offset
+            if self.y_min < y_abs < self.y_max:
+                ''' Conversion to mm and command emission'''
+                y_abs = y_abs / 1000
+                self.pidevice.MOV({2: y_abs})
+            else:
+                self.sig_status_message.emit('Absolute movement stopped: Y Motion limit would be reached!')
+
+        if 'z_abs' in dict:
+            z_abs = dict['z_abs']
+            z_abs = z_abs - self.int_z_pos_offset
+            if self.z_min < z_abs < self.z_max:
+                ''' Conversion to mm and command emission'''
+                z_abs = z_abs / 1000
+                self.pidevice.MOV({3: z_abs})
+            else:
+                self.sig_status_message.emit('Absolute movement stopped: Z Motion limit would be reached!')
+
+        if 'f_abs' in dict:
+            f_abs = dict['f_abs']
+            f_abs = f_abs - self.int_f_pos_offset
+            if self.f_min < f_abs < self.f_max:
+                ''' Conversion to mm and command emission'''
+                f_abs = f_abs / 1000
+                self.pidevice.MOV({5: f_abs})
+            else:
+                self.sig_status_message.emit('Absolute movement stopped: F Motion limit would be reached!')
+
+        if 'c_abs' in dict:
+            c_abs = dict['c_abs']
+            c_abs = c_abs - self.int_c_pos_offset
+            if self.c_min < c_abs < self.c_max:
+                ''' Conversion to mm and command emission'''
+                c_abs = c_abs / 1000
+                self.pidevice.MOV({6: c_abs})
+            else:
+                self.sig_status_message.emit('Absolute movement stopped: C Motion limit would be reached!')
+
+        if 'theta_abs' in dict:
+            theta_abs = dict['theta_abs']
+            theta_abs = theta_abs - self.int_theta_pos_offset
+            if self.theta_min < theta_abs < self.theta_max:
+                ''' No Conversion to mm !!!! and command emission'''
+                self.pidevice.MOV({4: theta_abs})
+            else:
+                self.sig_status_message.emit('Absolute movement stopped: Theta Motion limit would be reached!')
+
+        if wait_until_done:
+            self.pitools.waitontarget(self.pidevice)
+
+    def stop(self):
+        self.pidevice.STP(noraise=True)
+
+    def load_sample(self):
+        y_abs = self.cfg.stage_parameters['y_load_position'] / 1000
+        self.pidevice.MOV({2: y_abs})
+
+    def unload_sample(self):
+        y_abs = self.cfg.stage_parameters['y_unload_position'] / 1000
+        self.pidevice.MOV({2: y_abs})
+
+    def block_till_controller_is_ready(self):
+        '''
+        Blocks further execution (especially during referencing moves)
+        till the PI controller returns ready
+        '''
+        blockflag = True
+        while blockflag:
+            if self.pidevice.IsControllerReady():
+                blockflag = False
+            else:
+                time.sleep(0.1)
 
 # class mesoSPIM_GalilStages(mesoSPIM_Stage):
 #     '''
@@ -1385,12 +1563,13 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 
 
 class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
-    '''Stage driver combining a Physik Instrumente Z- and rotation axes with Galil-driven XYF axes.
+    '''
+    Deprecated?
+    Expects following microscope configuration:
 
     Sample XYF movement: Galil controller with 3 axes
     Z-Movement and Rotation: PI C-884 mercury controller
     '''
-
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1866,14 +2045,19 @@ class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
 
 
 class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
-    '''Stage driver for Applied Scientific Instrumentation (ASI) Tiger or MS-2000 controllers.
+    '''
+    Covers stages connected to ASI Tiger or MS2000 controllers.
+    It is expected that the parent class has the following signals:
+        sig_move_relative = pyqtSignal(dict)
+        sig_move_relative_and_wait_until_done = pyqtSignal(dict)
+        sig_move_absolute = pyqtSignal(dict)
+        sig_move_absolute_and_wait_until_done = pyqtSignal(dict)
+        sig_zero = pyqtSignal(list)
+        sig_unzero = pyqtSignal(list)
+        sig_stop_movement = pyqtSignal()
 
-    Communicates via serial (RS-232) using the ASI ASCII protocol through
-    :class:`mesoSPIM.src.devices.stages.asi.asicontrol.StageControlASI`.
-    Supports TTL-triggered motion via
-    :meth:`enable_ttl_motion` and :meth:`execute_program`.
-
-    Config file keys are defined  in ``cfg.asi_parameters``.
+    Also contains a QTimer that regularily sends position updates, e.g
+    during the execution of movements.
     '''
     #sig_pause = QtCore.pyqtSignal(bool)
 

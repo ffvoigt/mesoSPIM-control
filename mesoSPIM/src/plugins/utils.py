@@ -68,12 +68,9 @@ def get_image_writer_for_file_extension(file_extension: str):
             return writer
 
 def get_image_writer_name_for_file_extension(file_extension: str):
-    '''Return the name attribute of the writer for the given a compatible file extension.
-
-    Returns ``None`` if no registered writer supports the given extension.
-    '''
+    '''Return the name attribute of the writer for the given a compatible file extension'''
     writer = get_image_writer_for_file_extension(file_extension)
-    return writer['name'] if writer is not None else None
+    return writer['name']
 
 def get_image_writer_from_name(name: str):
     '''

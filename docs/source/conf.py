@@ -18,7 +18,7 @@ project = "mesoSPIM Control"
 author = "mesoSPIM team"
 copyright = "mesoSPIM team"
 version = ""
-release = "1.20.0"
+release = "1.11.1"
 
 # --- Docs-only hacks ---------------------------------------------------------
 # 1) Fake GetCurrentProcessorNumber on non-Windows platforms to avoid crashes in psutil
@@ -76,7 +76,6 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
     "myst_parser",
-    "sphinx_design",
 ]
 
 autodoc_mock_imports = [
@@ -96,21 +95,12 @@ autodoc_mock_imports = [
     "matplotlib",
     "psutil",
     "distutils",
-    "dcamapi",               # Hamamatsu camera API
-    "libgclib",              # Galil stage library
 ]
 
 
 # Optional but useful
 myst_enable_extensions = [
     "colon_fence",
-]
-
-# Suppress known/expected warnings
-suppress_warnings = [
-    "autodoc.mocked_object",  # expected: many hw-dep modules are mocked
-    "myst.header",            # CHANGELOG.md starts with H2, not H1
-    "docutils",               # lone * in PyQt5 auto-generated pyqtSignal docstrings
 ]
 
 templates_path = ["_templates"]
@@ -124,7 +114,7 @@ exclude_patterns = []
 pygments_style = "sphinx"
 
 # --- HTML output -------------------------------------------------------------
-html_theme = "furo"
+html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 htmlhelp_basename = "mesoSPIMControldoc"
 
