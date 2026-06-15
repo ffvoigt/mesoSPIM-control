@@ -5,16 +5,22 @@
 
 
 # mesoSPIM-control
-Image acquisition software for [mesoSPIM](http://mesospim.org/) light-sheet microscopes. Compatible with all official versions of mesoSPIM hardware (Benchtop, v4, v5), and multple alternative configurations.
+Image acquisition software for [mesoSPIM](http://mesospim.org/) light-sheet microscopes. Forked version specifically for the [mesoSPIM Ultra variant](https://github.com/mesoSPIM/mesoSPIM-hardware-documentation/wiki/mdibl_overview)
+that incorporates three Miltenyl dipping lenses in a custom turret. The reason for a forked version is that this mesoSPIM variant has an additional stage (the cuvette stage) and thus 6 axis that are controlled by the main PI stage 
+controller (and not 5 like the standard version).
+
+Compatible with all official versions of mesoSPIM hardware (Benchtop, v4, v5), and multple alternative configurations.
 
 ## Overview
 The mesoSPIM (mesoscale selective plane illumination microscope) is a family of versatile open-source microscopes optimized for fast imaging of large (many cm³) cleared tissue samples at near-isotropic resolution. 
 Currently, more than 30 mesoSPIM setups are operational [around the world](http://mesospim.org/setups/).
-Parts lists, drawings, and instructions for building a mesoSPIM can be found in the wiki pages:
-- [Benchtop mesoSPIM](https://github.com/mesoSPIM/benchtop-hardware)
+Parts lists, drawings, and instructions for building a mesoSPIM Ultra can be found in the wiki pages:
+- [mesoSPIM Ultra](https://github.com/mesoSPIM/mesoSPIM-hardware-documentation/wiki/mdibl_overview)
+The documentation is based on the hardware instructions for the "standard" mesoSPIM variants:
 - [mesoSPIM v4-5](https://github.com/mesoSPIM/mesoSPIM-hardware-documentation)
+- [Benchtop mesoSPIM](https://github.com/mesoSPIM/benchtop-hardware)
 
-The `mesoSPIM-control` is python-based acquisition software with user-friendly GUI, based on PyQt5 framework.
+`mesoSPIM-control` is python-based acquisition software with user-friendly GUI, based on PyQt5 framework.
 
 ## Installation
 
