@@ -49,7 +49,7 @@ class mesoSPIM_ScriptWindow(QtWidgets.QWidget):
         ''' Connect parent signals '''
         if parent is not None:
             self.parent.sig_enable_gui.connect(lambda boolean: self.setEnabled(boolean))
-            
+
         self.show()
 
     def load_script(self):
@@ -130,20 +130,20 @@ class PythonHighlighter (QtGui.QSyntaxHighlighter):
 
     # Python operators
     operators = [
-        '=',
+        r'=',
         # Comparison
-        '==', '!=', '<', '<=', '>', '>=',
+        r'==', r'!=', r'<', r'<=', r'>', r'>=',
         # Arithmetic
-        '\+', '-', '\*', '/', '//', '\%', '\*\*',
+        r'\+', r'-', r'\*', r'/', r'//', r'\%', r'\*\*',
         # In-place
-        '\+=', '-=', '\*=', '/=', '\%=',
+        r'\+=', r'-=', r'\*=', r'/=', r'\%=',
         # Bitwise
-        '\^', '\|', '\&', '\~', '>>', '<<',
+        r'\^', r'\|', r'\&', r'\~', r'>>', r'<<',
     ]
 
     # Python braces
     braces = [
-        '\{', '\}', '\(', '\)', '\[', '\]',
+        r'\{', r'\}', r'\(', r'\)', r'\[', r'\]',
     ]
 
     def __init__(self, document):
