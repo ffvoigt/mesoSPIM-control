@@ -10,34 +10,29 @@ logger = logging.getLogger(__name__)
 
 
 class mesoSPIM_Stage(QtCore.QObject):
-    '''Abstract base class for all mesoSPIM stage drivers.
+    '''
+    DemoStage for a mesoSPIM microscope
 
-    Concrete subclasses (:class:`mesoSPIM_DemoStage`, :class:`mesoSPIM_PI_1toN`,
-    :class:`mesoSPIM_PI_NtoN`, :class:`mesoSPIM_PI_rotz_and_Galil_xyf_Stages`,
-    :class:`mesoSPIM_ASI_Stages`) implement the hardware-specific communication.
+    It is expected that the parent class has the following signals:
+        sig_move_relative = pyqtSignal(dict)
+        sig_move_relative_and_wait_until_done = pyqtSignal(dict)
+        sig_move_absolute = pyqtSignal(dict)
+        sig_move_absolute_and_wait_until_done = pyqtSignal(dict)
+        sig_zero = pyqtSignal(list)
+        sig_unzero = pyqtSignal(list)
+        sig_stop_movement = pyqtSignal()
 
-    The base class provides:
-
-    * A 100 ms ``QTimer`` that calls :meth:`report_position` to keep the GUI
-      position readouts up to date.
-    * Software ("internal") position tracking with per-axis zeroing offsets so
-      that users can zero any axis without the physical stage moving.
-    * Motion-limit checking using ``cfg.stage_parameters`` (``x_min``, ``x_max``,
-      ``y_min``, ``y_max``, etc., all in micrometres).
-    * Default implementations of :meth:`load_sample`, :meth:`unload_sample`,
-      and :meth:`center_sample` driven by config values.
-
-    This object is owned by :class:`mesoSPIM_Serial` and therefore lives in the
-    **Core thread**.
+    Also contains a QTimer that regularily sends position updates, e.g
+    during the execution of movements.
     '''
 
     sig_position = QtCore.pyqtSignal(dict)
     sig_status_message = QtCore.pyqtSignal(str)
-    #sig_pause = QtCore.pyqtSignal(bool)
+    sig_pause = QtCore.pyqtSignal(bool)
 
     def __init__(self, parent=None):
         super().__init__()
-        self.parent = parent # 
+        self.parent = parent #
         self.cfg = parent.cfg
 
         self.state = self.parent.state # the mesoSPIM_StateSingleton() instance
@@ -284,8 +279,8 @@ class mesoSPIM_Stage(QtCore.QObject):
 
     def unload_sample(self):
         """Move the Y axis to ``cfg.stage_parameters['y_unload_position']``."""
-        self.y_pos = self.cfg.stage_parameters['y_unload_position']    
-        
+        self.y_pos = self.cfg.stage_parameters['y_unload_position']
+
     def center_sample(self):
         """Move X (and optionally Z) to the configured center / midpoint position.
 
@@ -547,7 +542,7 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 
         All stage controller are of same type and the sample stages work with reference setting.
         Focus stage has reference mode set to off.
-            
+
     Note:
         configs as declared in mesoSPIM_config.py:
         stage_parameters = {'stage_type' : 'PI_NcontrollersNstages',
@@ -664,11 +659,11 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 
 
     def move_relative(self, move_dict, wait_until_done=False):
-        ''' PI move relative method '''        
-        for axis_move in move_dict.keys():        
+        ''' PI move relative method '''
+        for axis_move in move_dict.keys():
             axis_name = axis_move.split('_')[0]
-            move_value = move_dict[axis_move]        
-        
+            move_value = move_dict[axis_move]
+
             if (hasattr(self.pi_stages, ('pidevice_' + axis_name))):
                 if (getattr(self, (axis_name + '_min')) < getattr(self, (axis_name + '_pos')) + move_value) and \
                     (getattr(self, (axis_name + '_max')) > getattr(self, (axis_name + '_pos')) + move_value):
@@ -697,7 +692,7 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
         for axis_move in move_dict.keys():
             axis_name = axis_move.split('_')[0]
             move_value = move_dict[axis_move] - locals()[axis_name + '_offset']
-            
+
             if (hasattr(self.pi_stages, ('pidevice_' + axis_name))):
                 if (getattr(self, (axis_name + '_min')) < move_value) and \
                         (getattr(self, (axis_name + '_max')) > move_value):
@@ -967,9 +962,9 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 #         positions = self.pidevice.qPOS(self.pidevice.axes)
 
 #         '''
-#         Ugly workaround to deal with non-responding stage 
-#         position reports: Do not update positions in 
-#         exceptional circumstances. 
+#         Ugly workaround to deal with non-responding stage
+#         position reports: Do not update positions in
+#         exceptional circumstances.
 #         '''
 #         self.x_pos, self.y_pos, self.z_pos = self.xyz_stage.read_position()
 #         self.f_pos = round(positions['5'] * 1000, 2)
@@ -1123,9 +1118,9 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 # class mesoSPIM_PI_rot_and_Galil_xyzf_Stages(mesoSPIM_Stage):
 #     '''
 #     Expects following microscope configuration:
-    
-#     Sample XYZ movement: Galil controller with 3 axes 
-#     F movement: Second Galil controller with a single axis 
+
+#     Sample XYZ movement: Galil controller with 3 axes
+#     F movement: Second Galil controller with a single axis
 #     Rotation: PI C-863 mercury controller
 
 #     It is expected that the parent class has the following signals:
@@ -1139,7 +1134,7 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 
 #     Also contains a QTimer that regularily sends position updates, e.g
 #     during the execution of movements.
-   
+
 #     '''
 
 #     def __init__(self, parent=None):
@@ -1229,9 +1224,9 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 #         positions = self.pidevice.qPOS(self.pidevice.axes)
 
 #         '''
-#         Ugly workaround to deal with non-responding stage 
-#         position reports: Do not update positions in 
-#         exceptional circumstances. 
+#         Ugly workaround to deal with non-responding stage
+#         position reports: Do not update positions in
+#         exceptional circumstances.
 #         '''
 #         try:
 #             self.x_pos, self.y_pos, self.z_pos = self.xyz_stage.read_position()
@@ -1385,12 +1380,13 @@ class mesoSPIM_PI_NtoN(mesoSPIM_Stage):
 
 
 class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
-    '''Stage driver combining a Physik Instrumente Z- and rotation axes with Galil-driven XYF axes.
+    '''
+    Deprecated?
+    Expects following microscope configuration:
 
     Sample XYF movement: Galil controller with 3 axes
     Z-Movement and Rotation: PI C-884 mercury controller
     '''
-
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -1460,9 +1456,9 @@ class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
         positions = self.pidevice.qPOS(self.pidevice.axes)
 
         '''
-        Ugly workaround to deal with non-responding stage 
-        position reports: Do not update positions in 
-        exceptional circumstances. 
+        Ugly workaround to deal with non-responding stage
+        position reports: Do not update positions in
+        exceptional circumstances.
         '''
         try:
             self.x_pos, self.y_pos, self.f_pos = self.xyf_stage.read_position()
@@ -1627,8 +1623,8 @@ class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
 #     '''
 #     Deprecated?
 #     Expects following microscope configuration:
-    
-#     Sample XY movement: Galil controller with 2 axes 
+
+#     Sample XY movement: Galil controller with 2 axes
 #     Z-Movement, F-Movement and Rotation: PI C-884 mercury controller
 #     '''
 
@@ -1702,9 +1698,9 @@ class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
 #         positions = self.pidevice.qPOS(self.pidevice.axes)
 
 #         '''
-#         Ugly workaround to deal with non-responding stage 
-#         position reports: Do not update positions in 
-#         exceptional circumstances. 
+#         Ugly workaround to deal with non-responding stage
+#         position reports: Do not update positions in
+#         exceptional circumstances.
 #         '''
 #         try:
 #             self.x_pos, self.y_pos = self.xy_stage.read_position()
@@ -1865,42 +1861,44 @@ class mesoSPIM_PI_rotz_and_Galil_xyf_Stages(mesoSPIM_Stage):
 #         self.xy_stage.execute_program()
 
 
-class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
-    '''Stage driver for Applied Scientific Instrumentation (ASI) Tiger or MS-2000 controllers.
-
-    Communicates via serial (RS-232) using the ASI ASCII protocol through
-    :class:`mesoSPIM.src.devices.stages.asi.asicontrol.StageControlASI`.
-    Supports TTL-triggered motion via
-    :meth:`enable_ttl_motion` and :meth:`execute_program`.
-
-    Config file keys are defined  in ``cfg.asi_parameters``.
+class mesoSPIM_ASI_Tiger_Stage(mesoSPIM_Stage):
     '''
-    #sig_pause = QtCore.pyqtSignal(bool)
+    It is expected that the parent class has the following signals:
+        sig_move_relative = pyqtSignal(dict)
+        sig_move_relative_and_wait_until_done = pyqtSignal(dict)
+        sig_move_absolute = pyqtSignal(dict)
+        sig_move_absolute_and_wait_until_done = pyqtSignal(dict)
+        sig_zero = pyqtSignal(list)
+        sig_unzero = pyqtSignal(list)
+        sig_stop_movement = pyqtSignal()
+
+    Also contains a QTimer that regularily sends position updates, e.g
+    during the execution of movements.
+    '''
+    sig_pause = QtCore.pyqtSignal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
         self.state = self.parent.state  # mesoSPIM_StateSingleton()
-        from .devices.stages.asi.asicontrol import StageControlASI
-        
+        from .devices.stages.asi.asicontrol import StageControlASITiger
+
         ''' Setting up the ASI stages '''
         self.asi_parameters = self.cfg.asi_parameters
         self.mesoSPIM2ASIdict = self.asi_parameters['stage_assignment'] # converts mesoSPIM stage to ASI stage designation
         # self.ASI2mesoSPIMdict = {self.mesoSPIM2ASIdict[item] : item for item in self.mesoSPIM2ASIdict} # converts ASI stage designation to mesoSPIM
 
         self.ttl_cards = self.asi_parameters['ttl_cards']
-        self.asi_stages = StageControlASI(self.asi_parameters)
-        #self.asi_stages.sig_pause.connect(self.pause)
+        self.asi_stages = StageControlASITiger(self.asi_parameters)
+        self.asi_stages.sig_pause.connect(self.pause)
 
-        logger.info(f'ASI axes configured: {self.asi_stages.axis_keys}')
-
-        assert hasattr(self.cfg, 'asi_parameters'), "Config file with ASI stage must have 'asi_parameters' dict."
+        assert hasattr(self.cfg, 'asi_parameters'), "Config file with stage 'TigerASI' must have 'asi_parameters' dict."
         self.ttl_motion_enabled_during_acq = self.cfg.asi_parameters['ttl_motion_enabled']
         self.ttl_motion_currently_enabled = False
         self.set_speed_from_config()
         self.pos_timer.setInterval(250)
         logger.info('ASI stages initialized')
-        
+
     def __del__(self):
         try:
             self.asi_stages.close()
@@ -1920,11 +1918,11 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
         else:
             print("INFO: 'speed' not found in config file, 'asi_parameters' dictionary, using default values.")
 
-#    @QtCore.pyqtSlot(bool)
-#    def pause(self, boolean):
-#        state = self.state['state']
-#        if state == 'run_selected_acquisition' or state == 'run_acquisition_list':
-#            self.sig_pause.emit(boolean)
+    @QtCore.pyqtSlot(bool)
+    def pause(self, boolean):
+        state = self.state['state']
+        if state == 'run_selected_acquisition' or state == 'run_acquisition_list':
+            self.sig_pause.emit(boolean)
 
     @QtCore.pyqtSlot(dict)
     def log_slice(self, dictionary):
@@ -1934,17 +1932,11 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
     def report_position(self):
         position_dict = self.asi_stages.read_position()
         if position_dict is not None:
-            # positions = [position_dict[x] for x in self.axes]
-            if 'x' in self.asi_stages.axis_keys:
-                self.x_pos = position_dict[self.mesoSPIM2ASIdict['x']]
-            if 'y' in self.asi_stages.axis_keys:
-                self.y_pos = position_dict[self.mesoSPIM2ASIdict['y']]
-            if 'z' in self.asi_stages.axis_keys:
-                self.z_pos = position_dict[self.mesoSPIM2ASIdict['z']]
-            if 'f' in self.asi_stages.axis_keys:
-                self.f_pos = position_dict[self.mesoSPIM2ASIdict['f']]
-            if 'theta' in self.asi_stages.axis_keys:
-                self.theta_pos = position_dict[self.mesoSPIM2ASIdict['theta']]
+            self.x_pos = position_dict[self.mesoSPIM2ASIdict['x']]
+            self.y_pos = position_dict[self.mesoSPIM2ASIdict['y']]
+            self.z_pos = position_dict[self.mesoSPIM2ASIdict['z']]
+            self.f_pos = position_dict[self.mesoSPIM2ASIdict['f']]
+            self.theta_pos = position_dict[self.mesoSPIM2ASIdict['theta']]
 
             self.create_position_dict()
 
@@ -1963,28 +1955,28 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
         '''
         motion_dict = {}
         if not self.ttl_motion_currently_enabled:
-            if 'x' in self.asi_stages.axis_keys and 'x_rel' in sdict:
+            if 'x_rel' in sdict:
                 x_rel = sdict['x_rel']
                 if self.x_min < self.x_pos + x_rel < self.x_max:
                     motion_dict.update({self.mesoSPIM2ASIdict['x'] : round(x_rel, 1)})
                 else:
                     self.sig_status_message.emit('Relative movement stopped: X Motion limit would be reached!')
 
-            if 'y' in self.asi_stages.axis_keys and 'y_rel' in sdict:
+            if 'y_rel' in sdict:
                 y_rel = sdict['y_rel']
                 if self.y_min < self.y_pos + y_rel < self.y_max:
                     motion_dict.update({self.mesoSPIM2ASIdict['y'] : round(y_rel, 1)})
                 else:
                     self.sig_status_message.emit('Relative movement stopped: Y Motion limit would be reached!')
 
-            if 'z' in self.asi_stages.axis_keys and 'z_rel' in sdict:
+            if 'z_rel' in sdict:
                 z_rel = sdict['z_rel']
                 if self.z_min < self.z_pos + z_rel < self.z_max:
                     motion_dict.update({self.mesoSPIM2ASIdict['z'] : round(z_rel, 1)})
                 else:
                     self.sig_status_message.emit('Relative movement stopped: z Motion limit would be reached!')
-            
-            if 'theta' in self.asi_stages.axis_keys and 'theta_rel' in sdict:
+
+            if 'theta_rel' in sdict:
                 theta_rel = sdict['theta_rel']
                 if self.theta_min < self.theta_pos + theta_rel < self.theta_max:
                     ''' 1° equals 1000 cts'''
@@ -1992,7 +1984,7 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
                 else:
                     self.sig_status_message.emit('Relative movement stopped: theta Motion limit would be reached!')
 
-            if 'f' in self.asi_stages.axis_keys and 'f_rel' in sdict:
+            if 'f_rel' in sdict:
                 f_rel = sdict['f_rel']
                 if self.f_min < self.f_pos + f_rel < self.f_max:
                     motion_dict.update({self.mesoSPIM2ASIdict['f'] : round(f_rel, 1)})
@@ -2004,7 +1996,7 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
 
             if wait_until_done:
                 self.asi_stages.wait_until_done()
-    
+
     def move_absolute(self, dict, wait_until_done=False, use_internal_position=True):
         '''
         ASI move absolute method
@@ -2024,35 +2016,35 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
             f_offset = 0
             theta_offset = 0
         motion_dict = {}
-        if 'x' in self.asi_stages.axis_keys and 'x_abs' in dict:
+        if 'x_abs' in dict:
             x_abs = dict['x_abs'] - x_offset
             if self.x_min < x_abs < self.x_max:
                 motion_dict.update({self.mesoSPIM2ASIdict['x'] : round(x_abs, 1)})
             else:
                 logger.error(f"The x-move is outside of min-max range, check your config file, 'x_min' and 'x_max'.")
 
-        if 'y' in self.asi_stages.axis_keys and 'y_abs' in dict:
+        if 'y_abs' in dict:
             y_abs = dict['y_abs'] - y_offset
             if self.y_min < y_abs < self.y_max:
                 motion_dict.update({self.mesoSPIM2ASIdict['y'] : round(y_abs, 1)})
             else:
                 logger.error(f"The y-move is outside of min-max range, check your config file, 'y_min' and 'y_max'.")
-                    
-        if 'z' in self.asi_stages.axis_keys and 'z_abs' in dict:
+
+        if 'z_abs' in dict:
             z_abs = dict['z_abs'] - z_offset
             if self.z_min < z_abs < self.z_max:
                 motion_dict.update({self.mesoSPIM2ASIdict['z'] : round(z_abs, 1)})
             else:
                 logger.error(f"The z-move is outside of min-max range, check your config file, 'z_min' and 'z_max'.")
 
-        if 'f' in self.asi_stages.axis_keys and 'f_abs' in dict:
+        if 'f_abs' in dict:
             f_abs = dict['f_abs'] - f_offset
             if self.f_min < f_abs < self.f_max:
                 motion_dict.update({self.mesoSPIM2ASIdict['f'] : round(f_abs, 1)})
             else:
                 logger.error(f"The f-move is outside of min-max range, check your config file, 'f_min' and 'f_max'.")
 
-        if 'theta' in self.asi_stages.axis_keys and 'theta_abs' in dict:
+        if 'theta_abs' in dict:
             theta_abs = dict['theta_abs'] - theta_offset
             if self.theta_min < theta_abs < self.theta_max:
                 ''' 1° equals 1000 cts'''
@@ -2062,10 +2054,10 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
 
         if motion_dict:
             self.asi_stages.move_absolute(motion_dict)
-        
+
         if wait_until_done is True:
             self.asi_stages.wait_until_done()
-        
+
     def stop(self):
         self.asi_stages.stop()
 
@@ -2076,6 +2068,372 @@ class mesoSPIM_ASI_Stages(mesoSPIM_Stage):
     def unload_sample(self):
         y_abs = self.cfg.stage_parameters['y_unload_position']
         self.move_absolute({'y_abs':round(y_abs)})
+
+    def enable_ttl_motion(self, boolean):
+        if self.ttl_motion_enabled_during_acq:
+            self.asi_stages.enable_ttl_mode(self.ttl_cards, boolean)
+            self.ttl_motion_currently_enabled = boolean
+            logger.info('TTL Motion currently enabled: '+str(boolean))
+            self.state['ttl_movement_enabled_during_acq'] = boolean
+
+
+class mesoSPIM_ASI_MS2000_Stage(mesoSPIM_Stage):
+    '''
+
+    It is expected that the parent class has the following signals:
+        sig_move_relative = pyqtSignal(dict)
+        sig_move_relative_and_wait_until_done = pyqtSignal(dict)
+        sig_move_absolute = pyqtSignal(dict)
+        sig_move_absolute_and_wait_until_done = pyqtSignal(dict)
+        sig_zero = pyqtSignal(list)
+        sig_unzero = pyqtSignal(list)
+        sig_stop_movement = pyqtSignal()
+
+    Also contains a QTimer that regularily sends position updates, e.g
+    during the execution of movements.
+
+    This implements an ASI MS2000 controller for a setup with the following configuration
+    * ASI X Stage is equivalent to the mesoSPIM z-stage (moved during stacks direction)
+    * ASI Y Stage is equivalent to the mesoSPIM y-stage
+    * ASI Z-Stage is equivalent to the mesoSPIM f-stage (focus)
+
+    '''
+    sig_pause = QtCore.pyqtSignal(bool)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.state = self.parent.state  # mesoSPIM_StateSingleton()
+        '''
+        ASI-specific code
+        '''
+        from .devices.stages.asi.asicontrol import StageControlASITiger
+
+        ''' Setting up the ASI stages '''
+        self.asi_parameters = self.cfg.asi_parameters
+        self.mesoSPIM2ASIdict = self.asi_parameters['stage_assignment'] # converts mesoSPIM stage to ASI stage designation
+        # self.ASI2mesoSPIMdict = {self.mesoSPIM2ASIdict[item] : item for item in self.mesoSPIM2ASIdict} # converts ASI stage designation to mesoSPIM
+
+        self.asi_stages = StageControlASITiger(self.asi_parameters)
+        self.asi_stages.sig_pause.connect(self.pause)
+        self.pos_timer.setInterval(100)
+
+        logger.info('mesoSPIM_Stages: ASI stages initialized')
+
+    def __del__(self):
+        try:
+            '''Close the ASI connection'''
+            self.asi_stages.close()
+        except:
+            pass
+
+    @QtCore.pyqtSlot(bool)
+    def pause(self,boolean):
+        state = self.state['state']
+        if state == 'run_selected_acquisition' or state == 'run_acquisition_list':
+            self.sig_pause.emit(boolean)
+
+    @QtCore.pyqtSlot(dict)
+    def log_slice(self, dictionary):
+        slice = dictionary['current_image_in_acq']
+        self.asi_stages.current_z_slice = slice
+
+    def report_position(self):
+        position_dict = self.asi_stages.read_position()
+        if position_dict is not None:
+            self.y_pos = position_dict[self.mesoSPIM2ASIdict['y']]
+            self.z_pos = position_dict[self.mesoSPIM2ASIdict['z']]
+            self.f_pos = position_dict[self.mesoSPIM2ASIdict['f']]
+
+            self.create_position_dict()
+
+            self.int_y_pos = self.y_pos + self.int_y_pos_offset
+            self.int_z_pos = self.z_pos + self.int_z_pos_offset
+            self.int_f_pos = self.f_pos + self.int_f_pos_offset
+
+            self.create_internal_position_dict()
+
+            self.sig_position.emit(self.int_position_dict)
+
+
+    def move_relative(self, sdict, wait_until_done=False):
+        ''' ASI move relative method
+
+        Lots of implementation details in here, should be replaced by a facade
+        '''
+
+        '''
+        Report position
+
+        '''
+        #self.adapt_position_polling_interval_to_state()
+
+        motion_dict = {}
+
+        if 'y_rel' in sdict:
+            y_rel = sdict['y_rel']
+            if self.y_min < self.y_pos + y_rel and self.y_max > self.y_pos + y_rel:
+                motion_dict.update({self.mesoSPIM2ASIdict['y'] : round(y_rel, 1)})
+            else:
+                self.sig_status_message.emit('Relative movement stopped: Y Motion limit would be reached!')
+
+        if 'z_rel' in sdict:
+            z_rel = sdict['z_rel']
+            if self.z_min < self.z_pos + z_rel and self.z_max > self.z_pos + z_rel:
+                motion_dict.update({self.mesoSPIM2ASIdict['z'] : round(z_rel, 1)})
+            else:
+                self.sig_status_message.emit('Relative movement stopped: z Motion limit would be reached!')
+
+        if 'f_rel' in sdict:
+            f_rel = sdict['f_rel']
+            if self.f_min < self.f_pos + f_rel and self.f_max > self.f_pos + f_rel:
+                motion_dict.update({self.mesoSPIM2ASIdict['f'] : round(f_rel, 1)})
+            else:
+                self.sig_status_message.emit('Relative movement stopped: f Motion limit would be reached!')
+
+        if motion_dict != {}:
+            self.asi_stages.move_relative(motion_dict)
+
+        if wait_until_done is True:
+            self.asi_stages.wait_until_done()
+
+    def move_absolute(self, dict, wait_until_done=False, use_internal_position=True):
+        '''
+        ASI move absolute method
+
+        Lots of implementation details in here, should be replaced by a facade
+        '''
+        if use_internal_position is True:
+            x_offset = self.int_x_pos_offset
+            y_offset = self.int_y_pos_offset
+            z_offset = self.int_z_pos_offset
+            f_offset = self.int_f_pos_offset
+            theta_offset = self.int_theta_pos_offset
+        else:
+            x_offset = 0
+            y_offset = 0
+            z_offset = 0
+            f_offset = 0
+            theta_offset = 0
+
+        motion_dict = {}
+
+        if 'y_abs' in dict:
+            y_abs = dict['y_abs'] - y_offset
+            if self.y_min < y_abs and self.y_max > y_abs:
+                motion_dict.update({self.mesoSPIM2ASIdict['y'] : round(y_abs, 1)})
+
+        if 'z_abs' in dict:
+            z_abs = dict['z_abs'] - z_offset
+            if self.z_min < z_abs and self.z_max > z_abs:
+                motion_dict.update({self.mesoSPIM2ASIdict['z'] : round(z_abs, 1)})
+
+        if 'f_abs' in dict:
+            f_abs = dict['f_abs'] - f_offset
+            if self.f_min < f_abs and self.f_max > f_abs:
+                motion_dict.update({self.mesoSPIM2ASIdict['f'] : round(f_abs, 1)})
+
+        if motion_dict != {}:
+            self.asi_stages.move_absolute(motion_dict)
+
+        if wait_until_done is True:
+            self.asi_stages.wait_until_done()
+
+    def stop(self):
+        self.asi_stages.stop()
+
+    def load_sample(self):
+        message = 'ASI MS-2000 Stage: Sample loading not implemented!'
+        print(message)
+        logger.info(message)
+
+    def unload_sample(self):
+        message = 'ASI MS-2000 Stage: Sample unloading not implemented!'
+        print(message)
+        logger.info(message)
+
+class mesoSPIM_ASI_MS2000_Stage_B067(mesoSPIM_Stage):
+    '''
+
+    It is expected that the parent class has the following signals:
+        sig_move_relative = pyqtSignal(dict)
+        sig_move_relative_and_wait_until_done = pyqtSignal(dict)
+        sig_move_absolute = pyqtSignal(dict)
+        sig_move_absolute_and_wait_until_done = pyqtSignal(dict)
+        sig_zero = pyqtSignal(list)
+        sig_unzero = pyqtSignal(list)
+        sig_stop_movement = pyqtSignal()
+
+    Also contains a QTimer that regularily sends position updates, e.g
+    during the execution of movements.
+
+    This implements an ASI MS2000 controller for a setup with the following configuration
+    * ASI X Stage is equivalent to the mesoSPIM x-stage
+    * ASI Y Stage is equivalent to the mesoSPIM z-stage (moved during stacks direction)
+
+    '''
+    sig_pause = QtCore.pyqtSignal(bool)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.parent = parent
+        self.state = self.parent.state  # mesoSPIM_StateSingleton()
+        '''
+        ASI-specific code
+        '''
+        from .devices.stages.asi.asicontrol import StageControlASITiger
+
+        ''' Setting up the ASI stages '''
+        self.asi_parameters = self.cfg.asi_parameters
+        self.mesoSPIM2ASIdict = self.asi_parameters['stage_assignment'] # converts mesoSPIM stage to ASI stage designation
+        # self.ASI2mesoSPIMdict = {self.mesoSPIM2ASIdict[item] : item for item in self.mesoSPIM2ASIdict} # converts ASI stage designation to mesoSPIM
+
+        self.asi_stages = StageControlASITiger(self.asi_parameters)
+        self.asi_stages.sig_pause.connect(self.pause)
+        self.pos_timer.setInterval(250)
+
+        assert hasattr(self.cfg, 'asi_parameters'), "Config file with stage 'TigerASI' must have 'asi_parameters' dict."
+        self.ttl_motion_enabled_during_acq = self.cfg.asi_parameters['ttl_motion_enabled']
+        self.ttl_motion_currently_enabled = False
+        self.ttl_cards = None
+        self.set_speed_from_config()
+
+        logger.info('mesoSPIM_Stages: ASI stages initialized')
+
+    def __del__(self):
+        try:
+            '''Close the ASI connection'''
+            self.asi_stages.close()
+        except:
+            pass
+
+    def set_speed_from_config(self):
+        if hasattr(self.cfg, 'asi_parameters') and 'speed' in self.cfg.asi_parameters.keys():
+            command = 'S'
+            for axis, speed in self.cfg.asi_parameters['speed'].items():
+                if self.asi_stages.axis_in_config_check(axis):
+                    command += ' ' + axis + '=' + str(speed)
+                else:
+                    logger.error(f'Axis {axis} not in the axes list, check config file for ASI stages')
+            command += '\r'
+            self.asi_stages._send_command(command.encode('ascii'))
+        else:
+            print("INFO: 'speed' not found in config file, 'asi_parameters' dictionary, using default values.")
+
+    @QtCore.pyqtSlot(bool)
+    def pause(self,boolean):
+        state = self.state['state']
+        if state == 'run_selected_acquisition' or state == 'run_acquisition_list':
+            self.sig_pause.emit(boolean)
+
+    @QtCore.pyqtSlot(dict)
+    def log_slice(self, dictionary):
+        slice = dictionary['current_image_in_acq']
+        self.asi_stages.current_z_slice = slice
+
+    def report_position(self):
+        position_dict = self.asi_stages.read_position()
+        if position_dict is not None:
+            self.x_pos = position_dict[self.mesoSPIM2ASIdict['x']]
+            #self.y_pos = position_dict[self.mesoSPIM2ASIdict['y']]
+            self.z_pos = position_dict[self.mesoSPIM2ASIdict['z']]
+            #self.f_pos = position_dict[self.mesoSPIM2ASIdict['f']]
+
+            # Note: Update Stage Designations here - Feb 17th, 2026, 4:15pm
+            self.create_position_dict()
+
+            self.int_x_pos = self.x_pos + self.int_x_pos_offset
+            self.int_z_pos = self.z_pos + self.int_z_pos_offset
+            #self.int_f_pos = self.f_pos + self.int_f_pos_offset
+
+            self.create_internal_position_dict()
+
+            self.sig_position.emit(self.int_position_dict)
+
+
+    def move_relative(self, sdict, wait_until_done=False):
+        ''' ASI move relative method
+
+        Lots of implementation details in here, should be replaced by a facade
+        '''
+
+        '''
+        Report position
+
+        '''
+        #self.adapt_position_polling_interval_to_state()
+
+        motion_dict = {}
+
+        if 'x_rel' in sdict:
+            x_rel = sdict['x_rel']
+            if self.x_min < self.x_pos + x_rel and self.x_max > self.x_pos + x_rel:
+                motion_dict.update({self.mesoSPIM2ASIdict['x'] : round(x_rel, 1)})
+            else:
+                self.sig_status_message.emit('Relative movement stopped: X Motion limit would be reached!')
+
+        if 'z_rel' in sdict:
+            z_rel = sdict['z_rel']
+            if self.z_min < self.z_pos + z_rel and self.z_max > self.z_pos + z_rel:
+                motion_dict.update({self.mesoSPIM2ASIdict['z'] : round(z_rel, 1)})
+            else:
+                self.sig_status_message.emit('Relative movement stopped: z Motion limit would be reached!')
+
+        if motion_dict != {}:
+            self.asi_stages.move_relative(motion_dict)
+
+        if wait_until_done is True:
+            self.asi_stages.wait_until_done()
+
+    def move_absolute(self, dict, wait_until_done=False, use_internal_position=True):
+        '''
+        ASI move absolute method
+
+        Lots of implementation details in here, should be replaced by a facade
+        '''
+        if use_internal_position is True:
+            x_offset = self.int_x_pos_offset
+            y_offset = self.int_y_pos_offset
+            z_offset = self.int_z_pos_offset
+            f_offset = self.int_f_pos_offset
+            theta_offset = self.int_theta_pos_offset
+        else:
+            x_offset = 0
+            y_offset = 0
+            z_offset = 0
+            f_offset = 0
+            theta_offset = 0
+
+        motion_dict = {}
+
+        if 'x_abs' in dict:
+            x_abs = dict['x_abs'] - x_offset
+            if self.x_min < x_abs and self.x_max > x_abs:
+                motion_dict.update({self.mesoSPIM2ASIdict['x'] : round(x_abs, 1)})
+
+        if 'z_abs' in dict:
+            z_abs = dict['z_abs'] - z_offset
+            if self.z_min < z_abs and self.z_max > z_abs:
+                motion_dict.update({self.mesoSPIM2ASIdict['z'] : round(z_abs, 1)})
+
+        if motion_dict != {}:
+            self.asi_stages.move_absolute(motion_dict)
+
+        if wait_until_done is True:
+            self.asi_stages.wait_until_done()
+
+    def stop(self):
+        self.asi_stages.stop()
+
+    def load_sample(self):
+        message = 'ASI MS-2000 Stage: Sample loading not implemented!'
+        print(message)
+        logger.info(message)
+
+    def unload_sample(self):
+        message = 'ASI MS-2000 Stage: Sample unloading not implemented!'
+        print(message)
+        logger.info(message)
 
     def enable_ttl_motion(self, boolean):
         if self.ttl_motion_enabled_during_acq:
