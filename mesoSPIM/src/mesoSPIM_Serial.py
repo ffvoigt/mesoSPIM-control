@@ -46,7 +46,7 @@ class mesoSPIM_Serial(QtCore.QObject):
     sig_mark_rotation_position = QtCore.pyqtSignal()
     sig_status_message = QtCore.pyqtSignal(str)
     sig_pause = QtCore.pyqtSignal(bool)
-    
+
     def __init__(self, parent):
         super().__init__()
 
@@ -164,10 +164,10 @@ class mesoSPIM_Serial(QtCore.QObject):
         """
         self.sig_status_message.emit(string)
 
-#    @QtCore.pyqtSlot(bool)
-#    def pause(self, boolean):
-#        logger.debug(f'Pause signal received: {boolean}')
-#        self.sig_pause.emit(boolean)
+    @QtCore.pyqtSlot(bool)
+    def pause(self, boolean):
+        logger.debug(f'Pause signal received: {boolean}')
+        self.sig_pause.emit(boolean)
 
     @QtCore.pyqtSlot(bool)
     def enable_ttl_motion(self, boolean):
@@ -190,7 +190,7 @@ class mesoSPIM_Serial(QtCore.QObject):
                     self.stage_limits_warning = True
                     return False
         if self.stage_limits_warning: # clear previous warning message
-            self.send_status_message('') 
+            self.send_status_message('')
             self.stage_limits_warning = False
         return True
 
